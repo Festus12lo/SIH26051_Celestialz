@@ -1,4 +1,0 @@
-shading_id,strategy_name,overhang_depth_m,fin_depth_m,shading_factor_summer,shading_factor_winter,target_surface,source_id,evidence_status
-SHD-OVERHANG-SOUTH-01,Fixed South Roof Overhang (0.60m),0.6,0.0,0.75,0.1,South Windows / Facade,SRC-LADAKH-REGS-2023,VALUE_VERIFIED
-SHD-VERANDA-WARM-01,Full Wrap-Around Covered Veranda,1.5,0.3,0.9,0.8,All Perimeter Walls,SRC-NBC-INDIA-2016,VALUE_VERIFIED
-SHD-NONE,Unobstructed Solar Aperture,0.0,0.0,0.0,0.0,Direct Glazing / Trombe Wall,SRC-LADAKH-REGS-2023,VALUE_VERIFIED

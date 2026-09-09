@@ -1,5 +1,0 @@
-site_condition_id,location_id,terrain_type,ground_condition,shading_context,wind_exposure,ground_frost_depth_m,ground_thermal_conductivity_W_mK,snow_load_kN_m2,seismic_zone,source_id,evidence_status
-SITE-LEH-HIGH-VALLEY,LOC-IN-LEH,High-altitude mountain valley plateau,Gravelly sandy loam / Permafrost risk,"Low horizon mountain obstruction in south, open sky dome",High winter north-westerly wind gusts (up to 45 km/h),1.2,1.8,1.5,Zone IV / V (High Risk),SRC-LADAKH-REGS-2023,VALUE_VERIFIED
-SITE-SHIMLA-RIDGE,LOC-IN-SHIMLA,Steep Himalayan mountain ridge / hillside,Rocky fractured shale / moist mountain soil,Moderate mountain slope self-shading,Moderate valley channel winds,0.4,1.5,2.5,Zone IV / V,SRC-NBC-INDIA-2016,VALUE_VERIFIED
-SITE-JAIPUR-PLAINS,LOC-IN-JAIPUR,Semi-arid flat alluvial plains,Dry sandy soil,Unobstructed flat horizon,Hot dry convective afternoon winds (Loo),0.0,1.2,0.0,Zone II (Low Risk),SRC-NBC-INDIA-2016,VALUE_VERIFIED
-SITE-KARUR-PLAINS,LOC-IN-KARUR,Tropical inland river basin,Clay loam / moist topsoil,Unobstructed open terrain,Moderate maritime/inland breeze,0.0,1.4,0.0,Zone II (Low Risk),SRC-NBC-INDIA-2016,VALUE_VERIFIED

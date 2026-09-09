@@ -18,6 +18,7 @@ if THERMAL_DIR not in sys.path:
 
 from thermal_engine import ThermalEngine
 from .weather_adapter import WeatherAdapter, SyntheticWeatherProvider
+from .ventilation_physics import NaturalVentilationEngine
 
 
 class PhysicsBridge:
@@ -102,6 +103,31 @@ class PhysicsBridge:
             capacitance = first_hr.get('effective_capacitance_J_K', 1e7)
             time_constant_hrs = first_hr.get('thermal_time_constant_hours', 40.0)
 
+            # Stack Effect calculation using worst-case thermal differential
+            indoor_temps = [r['indoor_temperature_C'] for r in hourly_results]
+            outdoor_temps = [r['outdoor_temperature_C'] for r in hourly_results]
+            max_diff = -1
+            t_in_stack, t_out_stack = 20.0, 20.0
+            for tin, tout in zip(indoor_temps, outdoor_temps):
+                if abs(tin - tout) > max_diff:
+                    max_diff = abs(tin - tout)
+                    t_in_stack, t_out_stack = tin, tout
+
+            # Assume 50% of total opening area is lower, 50% is upper for cross/stack flow
+            total_area = design.total_opening_area_m2
+            stack_res = NaturalVentilationEngine.simulate_stack_effect(
+                t_in_C=t_in_stack,
+                t_out_C=t_out_stack,
+                building_height_m=design.geometry.height_m,
+                lower_opening_area_m2=total_area * 0.5,
+                upper_opening_area_m2=total_area * 0.5,
+                elevation_m=design.context.elevation_m
+            )
+
+            from ..core.performance_vector import MetricValue
+            peak_vel = MetricValue("peak_stack_velocity", stack_res["velocity_m_s"], "m/s", "NaturalVentilationEngine", "CALCULATED", "Peak stack effect buoyancy-driven velocity")
+            peak_flow = MetricValue("peak_stack_flow", stack_res["volumetric_flow_m3_s"], "m³/s", "NaturalVentilationEngine", "CALCULATED", "Peak stack effect volumetric flow rate")
+
             # Build standardized PerformanceVector
             perf = PerformanceVector.from_simulation_results(
                 hourly_results=hourly_results,
@@ -109,7 +135,9 @@ class PhysicsBridge:
                 roof_u=roof_u,
                 floor_u=floor_u,
                 capacitance_J_K=capacitance,
-                time_constant_hours=time_constant_hrs
+                time_constant_hours=time_constant_hrs,
+                peak_stack_velocity_m_s=peak_vel,
+                peak_stack_flow_m3_s=peak_flow
             )
             return perf, hourly_results
 

@@ -1,4 +1,0 @@
-rule_id,target_climate,component,max_u_value_W_m2K,min_r_value_m2K_W,min_thermal_mass_kJ_m2K,rationale,source_id,evidence_status
-TH-RULE-COLD-WALL,Cold-Arid (Leh) & Cold-Humid (Shimla),Wall,0.45,2.22,150.0,High internal capacitance combined with low U-value maintains positive indoor temperature differential (>15C above outdoor freezing).,SRC-LADAKH-REGS-2023,VALUE_VERIFIED
-TH-RULE-COLD-ROOF,Cold-Arid (Leh) & Cold-Humid (Shimla),Roof,0.4,2.5,50.0,Roof thermal resistance must restrict buoyancy-driven heat stratification escape.,SRC-LADAKH-REGS-2023,VALUE_VERIFIED
-TH-RULE-WARM-WALL,Hot Semi-Arid (Jaipur) & Warm-Humid (Karur),Wall,1.5,0.67,100.0,Emphasizes radiant solar reflection and night purge heat dissipation rather than heavy winter insulation batts.,SRC-NBC-INDIA-2016,VALUE_VERIFIED

@@ -1,0 +1,133 @@
+{
+  "insulation": [
+    {
+      "id": "polyurethane_foam",
+      "name": "Polyurethane Foam",
+      "r_value_per_inch": 6.0,
+      "density_kg_m3": 30,
+      "cost_per_m2_inr": 850
+    },
+    {
+      "id": "aerogel",
+      "name": "Aerogel Blanket",
+      "r_value_per_inch": 10.3,
+      "density_kg_m3": 150,
+      "cost_per_m2_inr": 3500
+    },
+    {
+      "id": "mineral_wool",
+      "name": "Mineral Wool",
+      "r_value_per_inch": 3.1,
+      "density_kg_m3": 120,
+      "cost_per_m2_inr": 400
+    },
+    {
+      "id": "pcm_panels",
+      "name": "Phase Change Material (PCM) Panels",
+      "r_value_per_inch": 2.0,
+      "density_kg_m3": 850,
+      "specific_heat_j_kg_k": 5000,
+      "cost_per_m2_inr": 2500
+    },
+    {
+      "id": "radiant_barrier",
+      "name": "Radiant Barrier / Reflective Foil",
+      "r_value_per_inch": 1.0,
+      "density_kg_m3": 10,
+      "cost_per_m2_inr": 250
+    },
+    {
+      "id": "xps_insulation",
+      "name": "Extruded Polystyrene (XPS)",
+      "r_value_per_inch": 5.0,
+      "density_kg_m3": 40,
+      "cost_per_m2_inr": 650
+    }
+  ],
+  "structural": [
+    {
+      "id": "mud_brick",
+      "name": "Traditional Mud Brick",
+      "r_value_per_inch": 0.2,
+      "density_kg_m3": 1700,
+      "cost_per_m2_inr": 150
+    },
+    {
+      "id": "timber_frame",
+      "name": "Timber Frame",
+      "r_value_per_inch": 1.25,
+      "density_kg_m3": 600,
+      "cost_per_m2_inr": 1200
+    },
+    {
+      "id": "steel_frame",
+      "name": "Steel Frame",
+      "r_value_per_inch": 0.003,
+      "density_kg_m3": 7850,
+      "cost_per_m2_inr": 2500
+    },
+    {
+      "id": "rammed_earth",
+      "name": "Rammed Earth",
+      "r_value_per_inch": 0.25,
+      "density_kg_m3": 2000,
+      "specific_heat_j_kg_k": 850,
+      "cost_per_m2_inr": 350
+    },
+    {
+      "id": "aac_blocks",
+      "name": "AAC Blocks",
+      "r_value_per_inch": 1.25,
+      "density_kg_m3": 600,
+      "specific_heat_j_kg_k": 1000,
+      "cost_per_m2_inr": 800
+    }
+  ],
+  "glazing": [
+    {
+      "id": "double_glazed",
+      "name": "Double Glazed Window",
+      "u_value": 2.8,
+      "r_value": 2.0,
+      "density_kg_m3": 2500,
+      "shgc": 0.7,
+      "cost_per_m2_inr": 1800
+    },
+    {
+      "id": "triple_glazed",
+      "name": "Triple Glazed Window",
+      "u_value": 1.7,
+      "r_value": 3.3,
+      "density_kg_m3": 2500,
+      "shgc": 0.5,
+      "cost_per_m2_inr": 3200
+    },
+    {
+      "id": "reflective_glass",
+      "name": "Reflective Coated Glass",
+      "u_value": 3.0,
+      "r_value": 1.8,
+      "density_kg_m3": 2500,
+      "shgc": 0.35,
+      "cost_per_m2_inr": 1200
+    },
+    {
+      "id": "low_e_double_glazed",
+      "name": "Low-E Double Glazed",
+      "u_value": 1.5,
+      "r_value": 3.8,
+      "density_kg_m3": 2500,
+      "shgc": 0.3,
+      "cost_per_m2_inr": 3500
+    },
+    {
+      "id": "smart_glass",
+      "name": "Electrochromic Smart Glass",
+      "u_value": 1.4,
+      "r_value": 4.0,
+      "density_kg_m3": 2500,
+      "shgc": 0.1,
+      "cost_per_m2_inr": 45000
+    }
+  ]
+}

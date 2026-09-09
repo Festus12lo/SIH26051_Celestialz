@@ -1,0 +1,131 @@
+{
+  "emergency_portable_shelter": [
+    {
+      "id": "eps",
+      "name": "EPS Insulated Panels",
+      "type": "wall",
+      "desc": "Expanded Polystyrene (EPS) structural panels. Highly rapid deployment, excellent insulation, very lightweight.",
+      "image_url": "https://www.epack.in/wp-content/uploads/2025/09/EPS-Insulated-Sandwich-Panels-450x318.webp",
+      "r_value": 5.0,
+      "density_kg_m3": 40,
+      "cost_per_m2_inr": 650,
+      "specific_heat_j_kg_k": 1300
+    },
+    {
+      "id": "aerogel",
+      "name": "Aerogel Composite",
+      "type": "wall",
+      "desc": "Advanced aerogel infused fabric panels. Extremely thin and lightweight with industry-leading thermal resistance.",
+      "image_url": "https://technology.nasa.gov/t2media/tops/img/LEW-TOPS-141/LEW-TOPS-141_1388x1050.jpg",
+      "r_value": 10.3,
+      "density_kg_m3": 150,
+      "cost_per_m2_inr": 3500,
+      "specific_heat_j_kg_k": 800
+    },
+    {
+      "id": "hollow_polymer",
+      "name": "Hollow Polymer",
+      "type": "wall",
+      "desc": "Extruded hollow recycled polymer interlocking panels. Can be filled with sand or earth on-site for mass.",
+      "image_url": "https://www.teconform.com/wp-content/uploads/2026/01/Protection-Screen-300x200.jpg",
+      "r_value": 1.5,
+      "density_kg_m3": 900,
+      "cost_per_m2_inr": 400,
+      "specific_heat_j_kg_k": 1500
+    },
+    {
+      "id": "galvanized",
+      "name": "Corrugated Galvanized Iron",
+      "type": "roof",
+      "desc": "Standard corrugated metal sheets. Ubiquitous, cheap, durable, but offers poor thermal resistance without insulation.",
+      "image_url": "https://media.istockphoto.com/id/534637777/photo/galvanized-sheet-surface.jpg?s=612x612&w=0&k=20&c=qG89X1ygmUIT-uxc8bT2ebpd-smztdbPlS0D1Jd6YUg=",
+      "r_value": 0.1,
+      "density_kg_m3": 7850,
+      "cost_per_m2_inr": 800,
+      "specific_heat_j_kg_k": 450
+    },
+    {
+      "id": "low_e_alu",
+      "name": "Low-E Aluminum Sheet",
+      "type": "roof",
+      "desc": "Aluminum roofing with a low-emissivity finish to reflect radiant heat in extreme conditions.",
+      "image_url": "https://low-e.com/wp-content/themes/yootheme/cache/thermasheet-da1f556e.png",
+      "r_value": 0.5,
+      "density_kg_m3": 2700,
+      "cost_per_m2_inr": 1200,
+      "specific_heat_j_kg_k": 900
+    }
+  ],
+  "permanent_community_shelter": [
+    {
+      "id": "pir",
+      "name": "PIR Foam Board",
+      "type": "wall",
+      "desc": "Polyisocyanurate foam panels providing superior thermal resistance and fire performance for emergency use.",
+      "image_url": "https://5.imimg.com/data5/SELLER/Default/2026/3/589493338/QU/XG/GS/21907052/pir-sheet-poly-isocyanurate-boards-500x500.png",
+      "r_value": 6.5,
+      "density_kg_m3": 35,
+      "cost_per_m2_inr": 900,
+      "specific_heat_j_kg_k": 1400
+    },
+    {
+      "id": "hempcrete",
+      "name": "Modular Hempcrete",
+      "type": "wall",
+      "desc": "Pre-cast modular hempcrete panels. Carbon negative, breathable, and provides decent thermal mass.",
+      "image_url": "https://www.vonhanf.de/wp-content/uploads/2026/07/modular-hero-2.jpeg",
+      "r_value": 2.5,
+      "density_kg_m3": 330,
+      "cost_per_m2_inr": 550,
+      "specific_heat_j_kg_k": 1560
+    },
+    {
+      "id": "cool_roof",
+      "name": "High-Albedo Cool Roof",
+      "type": "roof",
+      "desc": "Membrane roof with highly reflective white coating to drastically reduce solar heat gain in hot climates.",
+      "image_url": "https://sika.scene7.com/is/image/sika/glo-medical-center-oxnard-roof-02:16-9?wid=1920&hei=1080&fit=crop%2C1",
+      "r_value": 0.2,
+      "density_kg_m3": 1200,
+      "cost_per_m2_inr": 600,
+      "specific_heat_j_kg_k": 1200
+    },
+    {
+      "id": "solar_absorbent",
+      "name": "Solar Absorbent Membrane",
+      "type": "roof",
+      "desc": "Dark roofing membrane designed specifically to maximize solar heat gain in extreme cold/arctic deployments.",
+      "image_url": "https://www.americanweatherstar.com/wp-content/uploads/2023/09/epdm-roofing-guide-hdr-img.jpg",
+      "r_value": 0.2,
+      "density_kg_m3": 1500,
+      "cost_per_m2_inr": 650,
+      "specific_heat_j_kg_k": 1200
+    }
+  ],
+  "glazing": [
+    {
+      "id": "single_clear",
+      "name": "Single Clear Glass",
+      "type": "window",
+      "desc": "Basic single pane window.",
+      "image_url": "",
+      "u_value": 5.8,
+      "r_value": 0.9,
+      "density_kg_m3": 2500,
+      "shgc": 0.85,
+      "cost_per_m2_inr": 800
+    },
+    {
+      "id": "low_e_double_glazed",
+      "name": "Low-E Double Glazed",
+      "type": "window",
+      "desc": "High performance insulated glass.",
+      "image_url": "",
+      "u_value": 1.5,
+      "r_value": 3.8,
+      "density_kg_m3": 2500,
+      "shgc": 0.3,
+      "cost_per_m2_inr": 3500
+    }
+  ]
+}

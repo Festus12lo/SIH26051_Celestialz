@@ -1,4 +1,0 @@
-simulation_id,design_case_id,engine_name,engine_version,timestamp,time_step_hours,simulation_duration_hours,initial_temp_C,status
-SIM-RUN-LEH-PASSIVE-01,CASE-LEH-PASSIVE-V1,ThermoShelter Reduced-Order Transient Engine,1.1.0,2026-08-27T22:00:00Z,1.0,5712,5.0,COMPLETED_CONVERGED
-SIM-RUN-LEH-MODERN-01,CASE-LEH-MODERN-CSEB,ThermoShelter Reduced-Order Transient Engine,1.1.0,2026-08-27T22:00:00Z,1.0,5712,10.0,COMPLETED_CONVERGED
-SIM-RUN-SHIMLA-01,CASE-SHIMLA-MOUNTAIN-01,ThermoShelter Reduced-Order Transient Engine,1.1.0,2026-08-27T22:00:00Z,1.0,5712,8.0,COMPLETED_CONVERGED

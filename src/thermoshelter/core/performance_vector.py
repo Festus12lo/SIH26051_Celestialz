@@ -58,6 +58,10 @@ class PerformanceVector:
     energy_balance_max_error_W: float
     constraint_violations: List[str] = field(default_factory=list)
     raw_simulation_hours: int = 0
+    
+    # Ventilation Physics (Stack Effect)
+    peak_stack_velocity_m_s: Optional[MetricValue] = None
+    peak_stack_flow_m3_s: Optional[MetricValue] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert performance vector to serializable dictionary."""
@@ -78,7 +82,9 @@ class PerformanceVector:
         floor_u: float,
         capacitance_J_K: float,
         time_constant_hours: float,
-        constraint_violations: Optional[List[str]] = None
+        constraint_violations: Optional[List[str]] = None,
+        peak_stack_velocity_m_s: Optional[MetricValue] = None,
+        peak_stack_flow_m3_s: Optional[MetricValue] = None
     ) -> "PerformanceVector":
         """Construct PerformanceVector from raw hourly simulation outputs."""
         if not hourly_results:
@@ -128,5 +134,7 @@ class PerformanceVector:
             simulation_status="CONVERGED",
             energy_balance_max_error_W=max_eb_err,
             constraint_violations=constraint_violations or [],
-            raw_simulation_hours=len(hourly_results)
+            raw_simulation_hours=len(hourly_results),
+            peak_stack_velocity_m_s=peak_stack_velocity_m_s,
+            peak_stack_flow_m3_s=peak_stack_flow_m3_s
         )

@@ -1,4 +1,0 @@
-result_record_id,simulation_id,avg_indoor_temp_C,min_indoor_temp_C,max_indoor_temp_C,diurnal_temperature_swing_C,heating_hours_below_5C,hours_acceptable_comfort,annual_or_period_heat_loss_kWh,peak_wall_heat_flux_W_m2,peak_solar_gain_W,effective_time_constant_hours
-RES-SIM-LEH-PASSIVE-01,SIM-RUN-LEH-PASSIVE-01,8.42,1.2,18.5,4.8,412,4980,1840.5,8.5,4820.0,64.2
-RES-SIM-LEH-MODERN-01,SIM-RUN-LEH-MODERN-01,12.8,6.5,21.4,3.2,0,5520,1120.0,4.8,5400.0,82.5
-RES-SIM-SHIMLA-01,SIM-RUN-SHIMLA-01,14.1,5.8,23.2,4.1,0,5410,980.0,5.2,4100.0,71.0

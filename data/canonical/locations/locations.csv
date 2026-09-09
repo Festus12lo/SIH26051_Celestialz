@@ -1,5 +1,0 @@
-location_id,name,state_province,country,latitude,longitude,elevation_m,climate_zone,climate_description,heating_degree_days_18C,cooling_degree_days_18C,data_source_id
-LOC-IN-LEH,Leh,Ladakh (UT),India,34.1526,77.5771,3500.0,Cold-Arid (High Altitude Alpine),"Extreme winter sub-zero down to -17C, severe diurnal swings, intense high-altitude solar radiation (>800 W/m2), low precipitation (<100mm/yr), thin dry atmosphere.",4850.0,45.0,SRC-OPEN-METEO-ARCHIVE
-LOC-IN-SHIMLA,Shimla,Himachal Pradesh,India,31.1048,77.1734,2200.0,Cold-Humid (Montane Himalayan),"Sub-zero winter lows down to -7C, high monsoon rainfall, high humidity, cloud cover, and seasonal snowfall.",3100.0,120.0,SRC-OPEN-METEO-ARCHIVE
-LOC-IN-JAIPUR,Jaipur,Rajasthan,India,26.9124,75.7873,430.0,Hot Semi-Arid / Composite,"Extreme summer heat >43C, moderate winter lows (5-6C), high solar radiation, low seasonal rainfall.",450.0,2850.0,SRC-OPEN-METEO-ARCHIVE
-LOC-IN-KARUR,Karur,Tamil Nadu,India,10.957,78.0811,100.0,Warm-Humid / Tropical,"Persistent warm temperatures (18C to 41C), elevated year-round humidity (up to 99%), high solar radiation.",0.0,3650.0,SRC-OPEN-METEO-ARCHIVE

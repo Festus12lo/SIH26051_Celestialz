@@ -1,569 +1,218 @@
 import React from 'react';
-import { PenTool, AlertTriangle } from 'lucide-react';
 
-interface FloorPlanOpening {
-  opening_id: string;
-  type: string;
-  orientation: string;
-  wall_side: string;
-  center_x: number;
-  center_y: number;
-  width_m: number;
-  height_m: number;
-  area_m2: number;
-  glazing: string;
+interface FloorplanViewerProps {
+  geometry: any;
+  dimensions: any;
 }
 
-interface RoomLayout {
-  room_id: string;
-  room_type: string;
-  name: string;
-  area_m2: number;
-  privacy: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  requires_window: boolean;
-  requires_door: boolean;
-  is_load_bearing?: boolean;
-}
+export default function FloorplanViewer({ geometry, dimensions }: FloorplanViewerProps) {
+  if (!geometry || !dimensions) return null;
 
-interface StaircaseData {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  direction: string;
-  num_treads: number;
-}
+  const length_mm = dimensions.length_mm || (dimensions.length_m * 1000) || 10000;
+  const width_mm = dimensions.width_mm || (dimensions.width_m * 1000) || 8000;
+  
+  // Padding around the drawing
+  const padding = 1200;
+  const viewBoxW = length_mm + padding * 2;
+  const viewBoxH = width_mm + padding * 2;
 
-interface SingleFloorPlan {
-  title?: string;
-  subtitle?: string;
-  floor_label?: string;
-  outer_boundary: number[][];
-  inner_boundary: number[][];
-  wall_thickness_m: number;
-  openings: FloorPlanOpening[];
-  room_layouts?: RoomLayout[];
-  room_dimensions?: Array<{ room_id: string; label: string; center_x: number; center_y: number }>;
-  has_corridor?: boolean;
-  staircase?: StaircaseData;
-  dimensions: Array<{ type: string; value_m: number; label: string; start: number[]; end: number[] }>;
-  north_arrow_angle_deg: number;
-  orientation_azimuth_deg: number;
-  floor_area_m2: number;
-  purpose_profile_id?: string;
-  note?: string;
-}
-
-interface FloorPlanData extends SingleFloorPlan {
-  is_multi_floor?: boolean;
-  num_floors?: number;
-  floor_plans?: SingleFloorPlan[];
-}
-
-interface OpeningData {
-  opening_id: string;
-  opening_type: string;
-  orientation: string;
-  width_m: number;
-  height_m: number;
-  area_m2: number;
-}
-
-interface RoomData {
-  room_id: string;
-  room_type: string;
-  name: string;
-  area_m2: number;
-  privacy: string;
-}
-
-interface DesignStateData {
-  geometry?: { length_m: number; width_m: number };
-  envelope?: { wall_thickness_mm: number; wall_material_id: string };
-  openings?: OpeningData[];
-  rooms?: RoomData[];
-  orientation_azimuth_deg?: number;
-  purpose_profile_id?: string;
-  design_name?: string;
-}
-
-interface FloorPlanViewerProps {
-  floorPlan?: FloorPlanData;
-  length: number;
-  width: number;
-  wallThicknessM?: number;
-  orientationDeg: number;
-  wallMaterial?: string;
-  designState?: DesignStateData;
-}
-
-const ROOM_COLORS: Record<string, string> = {
-  'SLEEPING': 'rgba(99, 102, 241, 0.15)',
-  'LIVING': 'rgba(52, 211, 153, 0.15)',
-  'KITCHEN': 'rgba(251, 191, 36, 0.15)',
-  'STORAGE': 'rgba(148, 163, 184, 0.10)',
-  'SERVICE': 'rgba(148, 163, 184, 0.10)',
-  'ENTRY': 'rgba(96, 165, 250, 0.12)',
-  'SHARED': 'rgba(167, 139, 250, 0.12)',
-  'TREATMENT': 'rgba(244, 114, 182, 0.15)',
-  'WAITING': 'rgba(251, 146, 60, 0.12)',
-  'CIRCULATION': 'rgba(255, 255, 255, 0.04)',
-};
-
-const ROOM_BORDER_COLORS: Record<string, string> = {
-  'SLEEPING': '#6366f1',
-  'LIVING': '#34d399',
-  'KITCHEN': '#fbbf24',
-  'STORAGE': '#94a3b8',
-  'SERVICE': '#64748b',
-  'ENTRY': '#60a5fa',
-  'SHARED': '#a78bfa',
-  'TREATMENT': '#f472b6',
-  'WAITING': '#fb923c',
-  'CIRCULATION': '#475569',
-};
-
-const FurnitureSymbol: React.FC<{
-  roomType: string; x: number; y: number; w: number; h: number;
-}> = ({ roomType, x, y, w, h }) => {
-  const cx = x + w / 2;
-  const cy = y + h / 2;
-  const s = Math.min(w, h) * 0.3;
-
-  switch (roomType) {
-    case 'SLEEPING':
-      return (
-        <g opacity="0.4">
-          <rect x={cx - s * 0.7} y={cy - s * 0.5} width={s * 1.4} height={s}
-            fill="none" stroke="#818cf8" strokeWidth="1" />
-          <rect x={cx - s * 0.65} y={cy - s * 0.45} width={s * 0.5} height={s * 0.3}
-            fill="none" stroke="#818cf8" strokeWidth="0.8" rx="2" />
-        </g>
-      );
-    case 'KITCHEN':
-      return (
-        <g opacity="0.4">
-          <polyline points={`${cx - s * 0.6},${cy + s * 0.5} ${cx - s * 0.6},${cy - s * 0.5} ${cx + s * 0.2},${cy - s * 0.5}`}
-            fill="none" stroke="#d97706" strokeWidth="1.2" />
-          <circle cx={cx + s * 0.4} cy={cy - s * 0.3} r={s * 0.12} fill="none" stroke="#d97706" strokeWidth="0.8" />
-          <circle cx={cx + s * 0.65} cy={cy - s * 0.3} r={s * 0.12} fill="none" stroke="#d97706" strokeWidth="0.8" />
-          <rect x={cx - s * 0.55} y={cy - s * 0.15} width={s * 0.3} height={s * 0.25}
-            fill="none" stroke="#d97706" strokeWidth="0.8" rx="2" />
-        </g>
-      );
-    case 'LIVING':
-      return (
-        <g opacity="0.35">
-          <polyline points={`${cx - s * 0.5},${cy + s * 0.5} ${cx - s * 0.5},${cy - s * 0.3} ${cx + s * 0.5},${cy - s * 0.3}`}
-            fill="none" stroke="#10b981" strokeWidth="1.5" strokeLinejoin="round" />
-          <rect x={cx - s * 0.15} y={cy + s * 0.05} width={s * 0.5} height={s * 0.3}
-            fill="none" stroke="#10b981" strokeWidth="0.8" />
-        </g>
-      );
-    case 'SERVICE':
-      return (
-        <g opacity="0.35">
-          <ellipse cx={cx - s * 0.2} cy={cy} rx={s * 0.2} ry={s * 0.25}
-            fill="none" stroke="#94a3b8" strokeWidth="0.8" />
-          <rect x={cx + s * 0.15} y={cy - s * 0.3} width={s * 0.4} height={s * 0.4}
-            fill="none" stroke="#94a3b8" strokeWidth="0.8" strokeDasharray="2 1" />
-        </g>
-      );
-    case 'ENTRY':
-      return (
-        <g opacity="0.3">
-          <line x1={cx - s * 0.4} y1={cy + s * 0.2} x2={cx + s * 0.4} y2={cy + s * 0.2}
-            stroke="#60a5fa" strokeWidth="1.5" />
-          <line x1={cx - s * 0.4} y1={cy + s * 0.35} x2={cx + s * 0.4} y2={cy + s * 0.35}
-            stroke="#60a5fa" strokeWidth="1" />
-        </g>
-      );
-    default:
-      return null;
-  }
-};
-
-const StaircaseSymbol: React.FC<{
-  staircase: StaircaseData; originX: number; originY: number; scale: number;
-}> = ({ staircase, originX, originY, scale }) => {
-  const sx = originX + staircase.x * scale;
-  const sy = originY + staircase.y * scale;
-  const sw = staircase.w * scale;
-  const sh = staircase.h * scale;
-  const treads = staircase.num_treads || 12;
-  const treadH = sh / treads;
+  // Transform to move drawing to center of padding and flip Y
+  const transform = `translate(${padding}, ${width_mm + padding}) scale(1, -1)`;
+  
+  // Text transform needs to flip Y back so text isn't upside down
+  const textTransform = (y: number) => `scale(1, -1) translate(0, -${y * 2})`;
 
   return (
-    <g>
-      <rect x={sx} y={sy} width={sw} height={sh}
-        fill="rgba(255,255,255,0.03)" stroke="#64748b" strokeWidth="1.2" />
-      {Array.from({ length: treads }).map((_, i) => (
-        <line key={`tread-${i}`}
-          x1={sx} y1={sy + i * treadH} x2={sx + sw} y2={sy + i * treadH}
-          stroke="#475569" strokeWidth="0.6" />
-      ))}
-      <line x1={sx + sw / 2} y1={sy + sh * 0.8}
-        x2={sx + sw / 2} y2={sy + sh * 0.2}
-        stroke="#94a3b8" strokeWidth="1.5" />
-      <text x={sx + sw / 2} y={sy + sh + 12}
-        textAnchor="middle" fill="#94a3b8" fontSize="7.5" fontFamily="Inter, sans-serif">
-        {staircase.direction === 'up' ? '\u25B2 UP' : '\u25BC DN'}
-      </text>
-    </g>
-  );
-};
+    <div className="relative w-full rounded-xl overflow-hidden border border-slate-800 bg-[#0b1120] shadow-2xl">
+      <svg 
+        viewBox={`0 0 ${viewBoxW} ${viewBoxH}`}
+        className="w-full max-h-[700px] object-contain"
+        style={{ background: '#0b1120' }}
+      >
+        <defs>
+          {/* Professional Blueprint Grid */}
+          <pattern id="blueprint-grid" width="1000" height="1000" patternUnits="userSpaceOnUse" patternTransform="scale(1, -1)">
+            {/* Minor grid lines */}
+            <path d="M 200 0 L 200 1000 M 400 0 L 400 1000 M 600 0 L 600 1000 M 800 0 L 800 1000" fill="none" stroke="#1e293b" strokeWidth="5" />
+            <path d="M 0 200 L 1000 200 M 0 400 L 1000 400 M 0 600 L 1000 600 M 0 800 L 1000 800" fill="none" stroke="#1e293b" strokeWidth="5" />
+            {/* Major grid lines */}
+            <rect width="1000" height="1000" fill="none" stroke="#334155" strokeWidth="10" />
+          </pattern>
 
-const SingleFloorSVG: React.FC<{
-  plan: SingleFloorPlan;
-  L: number; W: number; wallThickness: number;
-  wallMaterial: string;
-  svgWidth: number; svgHeight: number;
-  padding: number;
-  showTitleBlock?: boolean;
-  designName?: string;
-}> = ({ plan, L, W, wallThickness, wallMaterial, svgWidth, svgHeight, padding, showTitleBlock, designName }) => {
-  const t = wallThickness;
-  const scale = Math.min((svgWidth - padding * 2) / (L + 1.5), (svgHeight - padding * 2 - (showTitleBlock ? 50 : 0)) / (W + 1.5));
-  const originX = (svgWidth - L * scale) / 2;
-  const originY = (svgHeight - W * scale) / 2 + 10 - (showTitleBlock ? 20 : 0);
-  const outerWidthPx = L * scale;
-  const outerHeightPx = W * scale;
-  const wallPx = t * scale;
-  const roomLayouts = plan.room_layouts ?? [];
-  const openings = plan.openings ?? [];
-  const northArrowAngle = plan.north_arrow_angle_deg ?? 0;
+          {/* Hatch pattern for exterior walls */}
+          <pattern id="wall-hatch" width="100" height="100" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="100" stroke="#38bdf8" strokeWidth="15" opacity="0.3" />
+            <line x1="25" y1="0" x2="25" y2="100" stroke="#38bdf8" strokeWidth="5" opacity="0.1" />
+            <line x1="50" y1="0" x2="50" y2="100" stroke="#38bdf8" strokeWidth="15" opacity="0.3" />
+            <line x1="75" y1="0" x2="75" y2="100" stroke="#38bdf8" strokeWidth="5" opacity="0.1" />
+          </pattern>
+        </defs>
 
-  const getWallFill = (mat: string) => {
-    if (mat.includes('RAMMED') || mat.includes('CSEB')) return '#6b5438';
-    if (mat.includes('STONE')) return '#5a6066';
-    if (mat.includes('TIMBER')) return '#8b6940';
-    if (mat.includes('BRICK')) return '#8b3d2e';
-    if (mat.includes('STRAWBALE') || mat.includes('STRAWCLAY')) return '#9b8a52';
-    if (mat.includes('AAC')) return '#7a8a8a';
-    return '#4a5568';
-  };
-  const wallFill = getWallFill(wallMaterial);
+        {/* Background Grid Fill */}
+        <rect width="100%" height="100%" fill="url(#blueprint-grid)" />
 
-  return (
-    <>
-      <defs>
-        <pattern id="hatch-wall-lb" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="8" stroke={wallFill} strokeWidth="1.5" opacity="0.6" />
-          <line x1="4" y1="0" x2="4" y2="8" stroke={wallFill} strokeWidth="0.8" opacity="0.3" />
-        </pattern>
-      </defs>
+        <g transform={transform}>
+          
+          {/* ROOMS (Subtle shading and clean text) */}
+          {geometry.rooms?.map((room: any, i: number) => (
+            <g key={`room-${i}`}>
+              <rect
+                x={room.x}
+                y={room.y}
+                width={room.width_m * 1000}
+                height={room.length_m * 1000}
+                fill="#38bdf8"
+                fillOpacity={0.02}
+                stroke="#38bdf8"
+                strokeWidth={5}
+                strokeDasharray="50 50"
+                opacity={0.5}
+              />
+              {/* Room Name */}
+              <text
+                x={room.x + (room.width_m * 1000) / 2}
+                y={room.y + (room.length_m * 1000) / 2 + 100}
+                transform={textTransform(room.y + (room.length_m * 1000) / 2 + 100)}
+                textAnchor="middle"
+                alignmentBaseline="middle"
+                fill="#f8fafc"
+                fontSize={350}
+                fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+                fontWeight="600"
+                letterSpacing="0.05em"
+                style={{ userSelect: 'none' }}
+              >
+                {room.name.toUpperCase()}
+              </text>
+              {/* Room Dimensions */}
+              <text
+                x={room.x + (room.width_m * 1000) / 2}
+                y={room.y + (room.length_m * 1000) / 2 - 350}
+                transform={textTransform(room.y + (room.length_m * 1000) / 2 - 350)}
+                textAnchor="middle"
+                alignmentBaseline="middle"
+                fill="#94a3b8"
+                fontSize={250}
+                fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+                letterSpacing="0.05em"
+                style={{ userSelect: 'none' }}
+              >
+                {(room.width_m * 1000).toFixed(0)} × {(room.length_m * 1000).toFixed(0)}
+              </text>
+            </g>
+          ))}
 
-      <rect x={originX} y={originY} width={outerWidthPx} height={outerHeightPx}
-        fill="url(#hatch-wall-lb)" stroke={wallFill} strokeWidth="2.5" />
+          {/* WALLS (CAD Style) */}
+          {geometry.walls?.map((wall: any, i: number) => {
+            const dx = wall.end[0] - wall.start[0];
+            const dy = wall.end[1] - wall.start[1];
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            
+            return (
+              <g 
+                key={`wall-${i}`}
+                transform={`translate(${wall.start[0]}, ${wall.start[1]}) rotate(${angle})`}
+              >
+                {/* Wall Fill */}
+                <rect
+                  x={0}
+                  y={-wall.thickness / 2}
+                  width={length}
+                  height={wall.thickness}
+                  fill={wall.is_exterior ? "url(#wall-hatch)" : "#1e293b"}
+                  stroke={wall.is_exterior ? "#7dd3fc" : "#94a3b8"}
+                  strokeWidth={15}
+                />
+              </g>
+            );
+          })}
 
-      <rect x={originX + wallPx} y={originY + wallPx}
-        width={outerWidthPx - 2 * wallPx} height={outerHeightPx - 2 * wallPx}
-        fill="#0f1923" stroke="none" />
+          {/* DOORS (Architectural Swings) */}
+          {geometry.doors?.map((door: any, i: number) => {
+            return (
+              <g 
+                key={`door-${i}`}
+                transform={`translate(${door.pos[0]}, ${door.pos[1]}) rotate(${door.rot})`}
+              >
+                {/* Door swing arc */}
+                <path
+                  d={`M 0,0 A ${door.width} ${door.width} 0 0 1 ${door.width} ${door.width}`}
+                  fill="none"
+                  stroke="#fbbf24" /* Amber/Yellow for contrast against blue grid */
+                  strokeWidth={15}
+                  strokeDasharray="40 40"
+                />
+                {/* Door leaf */}
+                <line
+                  x1={0} y1={0}
+                  x2={0} y2={door.width}
+                  stroke="#fbbf24"
+                  strokeWidth={30}
+                  strokeLinecap="round"
+                />
+              </g>
+            );
+          })}
 
-      {roomLayouts.map((room, i) => {
-        const rx = originX + room.x * scale;
-        const ry = originY + room.y * scale;
-        const rw = room.w * scale;
-        const rh = room.h * scale;
-        const fillColor = ROOM_COLORS[room.room_type] ?? 'rgba(100,120,140,0.08)';
-        const borderColor = ROOM_BORDER_COLORS[room.room_type] ?? '#475569';
-        const isCorridor = room.room_type === 'CIRCULATION';
-
-        return (
-          <g key={`room-${i}`}>
-            <rect x={rx} y={ry} width={rw} height={rh}
-              fill={fillColor} stroke={borderColor}
-              strokeWidth={isCorridor ? '0.8' : '1.2'}
-              strokeDasharray={isCorridor ? '6 3' : '4 2'} />
-            <text x={rx + rw / 2} y={ry + rh / 2 - (isCorridor ? 0 : 8)}
-              textAnchor="middle" fill="#e2e8f0" fontSize={isCorridor ? '8' : '10'}
-              fontWeight="600" fontFamily="Inter, sans-serif">
-              {room.name}
+          {/* EXTERIOR DIMENSION LINES (Yellow CAD style with architectural ticks) */}
+          <g stroke="#facc15" strokeWidth={15} fill="none">
+            {/* Bottom dimension (Length) */}
+            <line x1={0} y1={-600} x2={length_mm} y2={-600} />
+            <line x1={0} y1={-400} x2={0} y2={-800} />
+            <line x1={length_mm} y1={-400} x2={length_mm} y2={-800} />
+            {/* Architectural ticks */}
+            <line x1={-100} y1={-700} x2={100} y2={-500} strokeWidth={25} />
+            <line x1={length_mm - 100} y1={-700} x2={length_mm + 100} y2={-500} strokeWidth={25} />
+            
+            <text 
+              x={length_mm / 2} y={-850} 
+              transform={textTransform(-850)} 
+              fill="#facc15" fontSize={350} 
+              fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+              textAnchor="middle" stroke="none"
+            >
+              {length_mm} mm
             </text>
-            {!isCorridor && (
-              <text x={rx + rw / 2} y={ry + rh / 2 + 5}
-                textAnchor="middle" fill="#94a3b8" fontSize="8" fontFamily="Inter, sans-serif">
-                {room.area_m2.toFixed(1)} m²
-              </text>
-            )}
-            {!isCorridor && rw > 35 && rh > 25 && (
-              <text x={rx + rw / 2} y={ry + rh / 2 + 16}
-                textAnchor="middle" fill="#64748b" fontSize="7" fontFamily="Inter, monospace">
-                {(room.w).toFixed(1)}\u00D7{(room.h).toFixed(1)}m
-              </text>
-            )}
-            {!isCorridor && rw > 40 && rh > 30 && (
-              <FurnitureSymbol roomType={room.room_type} x={rx} y={ry} w={rw} h={rh} />
-            )}
+            
+            {/* Left dimension (Width) */}
+            <line x1={-600} y1={0} x2={-600} y2={width_mm} />
+            <line x1={-400} y1={0} x2={-800} y2={0} />
+            <line x1={-400} y1={width_mm} x2={-800} y2={width_mm} />
+            {/* Architectural ticks */}
+            <line x1={-700} y1={-100} x2={-500} y2={100} strokeWidth={25} />
+            <line x1={-700} y1={width_mm - 100} x2={-500} y2={width_mm + 100} strokeWidth={25} />
+
+            <text 
+              x={-850} y={width_mm / 2} 
+              transform={`translate(-850, ${width_mm/2}) scale(1, -1) rotate(-90)`}
+              fill="#facc15" fontSize={350} 
+              fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+              textAnchor="middle" stroke="none"
+            >
+              {width_mm} mm
+            </text>
           </g>
-        );
-      })}
 
-      {openings.map((op, i) => {
-        const isWindow = op.type === 'WINDOW' || op.type === 'RABSAL_SUNSPACE';
-        const opWidthPx = Math.min(op.width_m * scale, outerWidthPx * 0.8);
-        let x1 = 0, y1 = 0, x2 = 0, y2 = 0;
-        switch (op.wall_side) {
-          case 'top':
-            x1 = originX + op.center_x * scale - opWidthPx / 2;
-            y1 = originY + outerHeightPx; x2 = x1 + opWidthPx; y2 = y1; break;
-          case 'bottom':
-            x1 = originX + op.center_x * scale - opWidthPx / 2;
-            y1 = originY; x2 = x1 + opWidthPx; y2 = y1; break;
-          case 'right':
-            x1 = originX + outerWidthPx; y1 = originY + op.center_y * scale - opWidthPx / 2;
-            x2 = x1; y2 = y1 + opWidthPx; break;
-          case 'left':
-            x1 = originX; y1 = originY + op.center_y * scale - opWidthPx / 2;
-            x2 = x1; y2 = y1 + opWidthPx; break;
-        }
-
-        if (isWindow) {
-          const isHoriz = op.wall_side === 'top' || op.wall_side === 'bottom';
-          const off = 2.5;
-          return (
-            <g key={`op-${i}`}>
-              <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#0f1923" strokeWidth="6" />
-              {isHoriz ? (
-                <>
-                  <line x1={x1} y1={y1 - off} x2={x2} y2={y2 - off} stroke="#38bdf8" strokeWidth="1.5" />
-                  <line x1={x1} y1={y1 + off} x2={x2} y2={y2 + off} stroke="#38bdf8" strokeWidth="1.5" />
-                  <line x1={(x1+x2)/2} y1={y1 - off} x2={(x1+x2)/2} y2={y1 + off} stroke="#38bdf8" strokeWidth="0.8" />
-                </>
-              ) : (
-                <>
-                  <line x1={x1 - off} y1={y1} x2={x2 - off} y2={y2} stroke="#38bdf8" strokeWidth="1.5" />
-                  <line x1={x1 + off} y1={y1} x2={x2 + off} y2={y2} stroke="#38bdf8" strokeWidth="1.5" />
-                  <line x1={x1 - off} y1={(y1+y2)/2} x2={x1 + off} y2={(y1+y2)/2} stroke="#38bdf8" strokeWidth="0.8" />
-                </>
-              )}
-            </g>
-          );
-        } else {
-          const arcR = opWidthPx * 0.7;
-          let arcPath = '';
-          switch (op.wall_side) {
-            case 'top':
-              arcPath = `M ${x1} ${y1} A ${arcR} ${arcR} 0 0 0 ${x1 + arcR * 0.7} ${y1 - arcR * 0.7}`; break;
-            case 'bottom':
-              arcPath = `M ${x1} ${y1} A ${arcR} ${arcR} 0 0 1 ${x1 + arcR * 0.7} ${y1 + arcR * 0.7}`; break;
-            case 'right':
-              arcPath = `M ${x1} ${y1} A ${arcR} ${arcR} 0 0 0 ${x1 - arcR * 0.7} ${y1 + arcR * 0.7}`; break;
-            case 'left':
-              arcPath = `M ${x1} ${y1} A ${arcR} ${arcR} 0 0 1 ${x1 + arcR * 0.7} ${y1 + arcR * 0.7}`; break;
-          }
-          return (
-            <g key={`op-${i}`}>
-              <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#0f1923" strokeWidth="6" />
-              <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#92400e" strokeWidth="3" strokeLinecap="round" />
-              <path d={arcPath} fill="none" stroke="#92400e" strokeWidth="1" strokeDasharray="3 2" opacity="0.6" />
-            </g>
-          );
-        }
-      })}
-
-      {plan.staircase && (
-        <StaircaseSymbol staircase={plan.staircase} originX={originX} originY={originY} scale={scale} />
-      )}
-
-      {/* Dimension Lines */}
-      <g>
-        <line x1={originX} y1={originY + outerHeightPx + 25} x2={originX + outerWidthPx} y2={originY + outerHeightPx + 25}
-          stroke="#60a5fa" strokeWidth="0.8" />
-        <line x1={originX} y1={originY + outerHeightPx + 20} x2={originX} y2={originY + outerHeightPx + 30} stroke="#60a5fa" strokeWidth="0.8" />
-        <line x1={originX + outerWidthPx} y1={originY + outerHeightPx + 20} x2={originX + outerWidthPx} y2={originY + outerHeightPx + 30} stroke="#60a5fa" strokeWidth="0.8" />
-        <text x={originX + outerWidthPx / 2} y={originY + outerHeightPx + 40}
-          textAnchor="middle" fill="#60a5fa" fontSize="10" fontWeight="bold" fontFamily="Inter, monospace">
-          {L.toFixed(2)} m
-        </text>
-      </g>
-      <g>
-        <line x1={originX - 25} y1={originY} x2={originX - 25} y2={originY + outerHeightPx} stroke="#60a5fa" strokeWidth="0.8" />
-        <line x1={originX - 20} y1={originY} x2={originX - 30} y2={originY} stroke="#60a5fa" strokeWidth="0.8" />
-        <line x1={originX - 20} y1={originY + outerHeightPx} x2={originX - 30} y2={originY + outerHeightPx} stroke="#60a5fa" strokeWidth="0.8" />
-        <text x={originX - 35} y={originY + outerHeightPx / 2}
-          textAnchor="middle" fill="#60a5fa" fontSize="10" fontWeight="bold" fontFamily="Inter, monospace"
-          transform={`rotate(-90, ${originX - 35}, ${originY + outerHeightPx / 2})`}>
-          {W.toFixed(2)} m
-        </text>
-      </g>
-
-      {/* North Arrow */}
-      <g transform={`translate(${originX + outerWidthPx + 40}, ${originY + 30})`}>
-        <circle cx="0" cy="0" r="18" fill="none" stroke="#ef4444" strokeWidth="1.5" opacity="0.6" />
-        <line x1="0" y1="12" x2="0" y2="-12" stroke="#ef4444" strokeWidth="2"
-          transform={`rotate(${northArrowAngle})`} />
-        <polygon points="0,-14 -4,-8 4,-8" fill="#ef4444"
-          transform={`rotate(${northArrowAngle})`} />
-        <text x="0" y="-22" textAnchor="middle" fill="#ef4444" fontSize="10" fontWeight="bold">N</text>
-      </g>
-
-      {/* Section Cut A-A */}
-      <g opacity="0.5">
-        <line x1={originX - 15} y1={originY + outerHeightPx / 2}
-          x2={originX + outerWidthPx + 15} y2={originY + outerHeightPx / 2}
-          stroke="#f472b6" strokeWidth="0.6" strokeDasharray="8 4 2 4" />
-        <text x={originX - 18} y={originY + outerHeightPx / 2 + 3}
-          textAnchor="end" fill="#f472b6" fontSize="8" fontWeight="bold">A</text>
-        <text x={originX + outerWidthPx + 18} y={originY + outerHeightPx / 2 + 3}
-          textAnchor="start" fill="#f472b6" fontSize="8" fontWeight="bold">A</text>
-      </g>
-
-      {/* Scale Bar */}
-      <g transform={`translate(${originX}, ${originY + outerHeightPx + 52})`}>
-        <line x1="0" y1="0" x2={scale} y2="0" stroke="#94a3b8" strokeWidth="2" />
-        <line x1="0" y1="-3" x2="0" y2="3" stroke="#94a3b8" strokeWidth="1" />
-        <line x1={scale} y1="-3" x2={scale} y2="3" stroke="#94a3b8" strokeWidth="1" />
-        <text x={scale / 2} y="12" textAnchor="middle" fill="#94a3b8" fontSize="8" fontFamily="Inter, monospace">
-          1.00 m
-        </text>
-      </g>
-
-      {plan.floor_label && (
-        <text x={originX + outerWidthPx / 2} y={originY - 12}
-          textAnchor="middle" fill="#e2e8f0" fontSize="12" fontWeight="700" fontFamily="Inter, sans-serif"
-          letterSpacing="1">
-          {plan.floor_label.toUpperCase()}
-        </text>
-      )}
-
-      {showTitleBlock && (
-        <g>
-          <rect x={svgWidth - 195} y={svgHeight - 55} width="190" height="50"
-            fill="rgba(15,25,35,0.9)" stroke="#334155" strokeWidth="1" rx="3" />
-          <text x={svgWidth - 100} y={svgHeight - 40} textAnchor="middle"
-            fill="#e2e8f0" fontSize="8" fontWeight="700" fontFamily="Inter, sans-serif">
-            THERMOSHELTER - {(designName ?? 'Passive Shelter').toUpperCase()}
-          </text>
-          <text x={svgWidth - 100} y={svgHeight - 28} textAnchor="middle"
-            fill="#94a3b8" fontSize="7" fontFamily="Inter, sans-serif">
-            Scale: 1:{Math.round(1000 / scale)} | Area: {(L * W).toFixed(1)} m\u00B2
-          </text>
-          <text x={svgWidth - 100} y={svgHeight - 16} textAnchor="middle"
-            fill="#64748b" fontSize="6.5" fontFamily="Inter, monospace">
-            DWG-{plan.purpose_profile_id ?? 'GEN'}-001 | {new Date().toISOString().slice(0, 10)}
-          </text>
         </g>
-      )}
-    </>
-  );
-};
-
-export const FloorPlanViewer: React.FC<FloorPlanViewerProps> = ({
-  floorPlan,
-  length: propLength,
-  width: propWidth,
-  wallThicknessM: propWallThick,
-  orientationDeg: propOrient,
-  wallMaterial: propWallMat = 'MAT-RAMMED',
-  designState,
-}) => {
-  const L = designState?.geometry?.length_m ?? propLength ?? 6.0;
-  const W = designState?.geometry?.width_m ?? propWidth ?? 4.0;
-  const t = (designState?.envelope?.wall_thickness_mm ?? (propWallThick ? propWallThick * 1000 : 300)) / 1000.0;
-  const wallMaterial = designState?.envelope?.wall_material_id ?? propWallMat;
-  const floorArea = L * W;
-
-  const isMultiFloor = floorPlan?.is_multi_floor === true && floorPlan?.floor_plans;
-
-  if (isMultiFloor && floorPlan?.floor_plans) {
-    const svgWidth = 1300;
-    const svgHeight = 500;
-    const halfW = svgWidth / 2;
-
-    return (
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col">
-        <div className="px-6 py-5 border-b border-slate-800 bg-slate-950/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <h4 className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
-              <PenTool className="w-4 h-4 text-cyan-400" />
-              2D Duplex Blueprint — Architecture-Grade (SVG)
-            </h4>
-            <span className="text-xs text-slate-400 font-mono">
-              {L.toFixed(1)}m × {W.toFixed(1)}m per floor • {floorPlan.floor_plans.length} floors • {(floorArea * 2).toFixed(1)} m² total
-            </span>
-          </div>
-          <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg text-amber-400">
-            <AlertTriangle className="w-4 h-4" />
-            <span className="text-[10px] font-bold tracking-wider">NOT FOR CONSTRUCTION</span>
-          </div>
+      </svg>
+      
+      {/* Blueprint Legend Overlay */}
+      <div className="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-md border border-slate-700 p-4 rounded-lg shadow-xl font-mono text-xs text-slate-300 pointer-events-none">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-4 h-4 bg-[url(#wall-hatch)] border border-sky-400 rounded-sm"></div>
+          <span>Exterior Wall</span>
         </div>
-        <div className="w-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-800 to-slate-950 overflow-x-auto p-4 flex justify-center">
-          <div className="min-w-[1000px] w-full">
-            <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto drop-shadow-2xl" xmlns="http://www.w3.org/2000/svg">
-              <g>
-                <SingleFloorSVG plan={floorPlan.floor_plans[0]} L={L} W={W}
-                  wallThickness={t} wallMaterial={wallMaterial}
-                  svgWidth={halfW} svgHeight={svgHeight} padding={70}
-                  designName={designState?.design_name} />
-              </g>
-              <line x1={halfW} y1="20" x2={halfW} y2={svgHeight - 20}
-                stroke="#334155" strokeWidth="1" strokeDasharray="6 4" />
-              <g transform={`translate(${halfW}, 0)`}>
-                <SingleFloorSVG plan={floorPlan.floor_plans[1]} L={L} W={W}
-                  wallThickness={t} wallMaterial={wallMaterial}
-                  svgWidth={halfW} svgHeight={svgHeight} padding={70}
-                  showTitleBlock={true} designName={designState?.design_name} />
-              </g>
-            </svg>
-          </div>
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-4 h-4 bg-slate-800 border border-slate-400 rounded-sm"></div>
+          <span>Partition Wall</span>
         </div>
-      </div>
-    );
-  }
-
-  const svgWidth = 680;
-  const svgHeight = 500;
-  const padding = 80;
-
-  const singlePlan: SingleFloorPlan = floorPlan ?? {
-    outer_boundary: [[0, 0], [L, 0], [L, W], [0, W], [0, 0]],
-    inner_boundary: [[t, t], [L - t, t], [L - t, W - t], [t, W - t], [t, t]],
-    wall_thickness_m: t,
-    openings: [],
-    room_layouts: [],
-    dimensions: [],
-    north_arrow_angle_deg: (360 - (designState?.orientation_azimuth_deg ?? propOrient ?? 180)) % 360,
-    orientation_azimuth_deg: designState?.orientation_azimuth_deg ?? propOrient ?? 180,
-    floor_area_m2: floorArea,
-    purpose_profile_id: designState?.purpose_profile_id,
-  };
-
-  const computedRoomLayouts = singlePlan.room_layouts ?? [];
-
-  return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col">
-      <div className="px-6 py-5 border-b border-slate-800 bg-slate-950/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h4 className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
-            <PenTool className="w-4 h-4 text-cyan-400" />
-            2D Architectural Blueprint — Zone-Based (SVG)
-          </h4>
-          <span className="text-xs text-slate-400 font-mono">
-            {L.toFixed(1)}m × {W.toFixed(1)}m = {floorArea.toFixed(1)} m² gross
-            {computedRoomLayouts.length > 0 && ` • ${computedRoomLayouts.filter(r => r.room_type !== 'CIRCULATION').length} zones`}
-            {singlePlan.has_corridor && ' • corridor'}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg text-amber-400">
-          <AlertTriangle className="w-4 h-4" />
-          <span className="text-[10px] font-bold tracking-wider">NOT FOR CONSTRUCTION</span>
-        </div>
-      </div>
-      <div className="w-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-800 to-slate-950 overflow-x-auto p-4 flex justify-center">
-        <div className="min-w-[600px] w-full max-w-4xl">
-          <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto drop-shadow-2xl" xmlns="http://www.w3.org/2000/svg">
-            <SingleFloorSVG plan={singlePlan} L={L} W={W}
-              wallThickness={t} wallMaterial={wallMaterial}
-              svgWidth={svgWidth} svgHeight={svgHeight} padding={padding}
-              showTitleBlock={true} designName={designState?.design_name} />
-          </svg>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-0 border-t-2 border-dashed border-amber-400"></div>
+          <span>Door Swing</span>
         </div>
       </div>
     </div>
   );
-};
+}
+

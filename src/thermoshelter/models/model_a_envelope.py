@@ -43,6 +43,34 @@ class ModelA_EnvelopeSelector:
         "Cold-Arid (High Altitude Alpine)": {
             "WALL": [
                 AssemblySpec(
+                    assembly_id="ASM-WALL-CATALOGUE-EPS",
+                    material_id="eps",
+                    component_type="WALL",
+                    thickness_mm=100.0,
+                    u_value=0.2,
+                    r_value=5.0,
+                    embodied_carbon_kgCO2_m2=15.0,
+                    cost_index=1.5,
+                    constructability_speed="RAPID",
+                    local_availability="IMPORTED",
+                    description="EPS Insulated Panels (Expanded Polystyrene)",
+                    confidence=0.95
+                ),
+                AssemblySpec(
+                    assembly_id="ASM-WALL-CATALOGUE-AEROGEL",
+                    material_id="aerogel",
+                    component_type="WALL",
+                    thickness_mm=50.0,
+                    u_value=0.09,
+                    r_value=10.3,
+                    embodied_carbon_kgCO2_m2=35.0,
+                    cost_index=5.0,
+                    constructability_speed="SPECIALIZED",
+                    local_availability="IMPORTED",
+                    description="Advanced Aerogel Composite",
+                    confidence=0.90
+                ),
+                AssemblySpec(
                     assembly_id="ASM-WALL-LADAKH-INS-MOD",
                     material_id="MAT-CSEB",
                     component_type="WALL",
@@ -97,6 +125,20 @@ class ModelA_EnvelopeSelector:
                     local_availability="LOCAL_PRIMARY",
                     description="400mm Strawbale / Agricultural Waste Block + Lime/Mud Plaster (Super-Insulated)",
                     confidence=0.88
+                ),
+                AssemblySpec(
+                    assembly_id="ASM-WALL-LADAKH-MILITARY-SIP",
+                    material_id="MAT-SIP-MILITARY",
+                    component_type="WALL",
+                    thickness_mm=100.0,
+                    u_value=0.18,
+                    r_value=5.55,
+                    embodied_carbon_kgCO2_m2=65.0,
+                    cost_index=4.8,
+                    constructability_speed="RAPID",
+                    local_availability="IMPORTED",
+                    description="100mm Structural Insulated Panel (PIR Core + Aluminum Skin) - Military Grade Rapid Deployment",
+                    confidence=0.98
                 )
             ],
             "ROOF": [
@@ -127,6 +169,20 @@ class ModelA_EnvelopeSelector:
                     local_availability="LOCAL_PRIMARY",
                     description="200mm Compacted Poplar / Willow Thatch + 80mm Mud/Straw Thermal Cap",
                     confidence=0.94
+                ),
+                AssemblySpec(
+                    assembly_id="ASM-ROOF-LADAKH-AEROGEL",
+                    material_id="MAT-AEROGEL-TEXTILE",
+                    component_type="ROOF",
+                    thickness_mm=20.0,
+                    u_value=0.15,
+                    r_value=6.66,
+                    embodied_carbon_kgCO2_m2=55.0,
+                    cost_index=5.0,
+                    constructability_speed="RAPID",
+                    local_availability="IMPORTED",
+                    description="20mm NASA-Grade Aerogel Polymer Textile Membrane (Extreme Cold Expeditionary Tent)",
+                    confidence=0.92
                 )
             ],
             "FLOOR": [
@@ -143,6 +199,20 @@ class ModelA_EnvelopeSelector:
                     local_availability="REGIONAL",
                     description="60mm Sub-Slab XPS Frost Barrier + 100mm Concrete Slab + Timber Finish",
                     confidence=0.95
+                ),
+                AssemblySpec(
+                    assembly_id="ASM-FLOOR-LADAKH-MILITARY-SIP",
+                    material_id="MAT-SIP-MILITARY",
+                    component_type="FLOOR",
+                    thickness_mm=120.0,
+                    u_value=0.22,
+                    r_value=4.54,
+                    embodied_carbon_kgCO2_m2=45.0,
+                    cost_index=4.5,
+                    constructability_speed="RAPID",
+                    local_availability="IMPORTED",
+                    description="120mm Structural Insulated Panel (Aluminum Skin + PIR Foam Core) Interlocking Floor",
+                    confidence=0.96
                 )
             ]
         },
@@ -239,6 +309,48 @@ class ModelA_EnvelopeSelector:
                     local_availability="REGIONAL",
                     description="200mm Autoclaved Aerated Block + White Radiant Barrier Render",
                     confidence=0.90
+                ),
+                AssemblySpec(
+                    assembly_id="ASM-WALL-HOT-PCM-DRYWALL",
+                    material_id="MAT-PCM-BOARD",
+                    component_type="WALL",
+                    thickness_mm=180.0,
+                    u_value=0.35,
+                    r_value=2.85,
+                    embodied_carbon_kgCO2_m2=35.0,
+                    cost_index=3.8,
+                    constructability_speed="RAPID",
+                    local_availability="IMPORTED",
+                    description="150mm Light Steel Frame + 30mm Phase Change Material (PCM) Latent Heat Absorbing Drywall",
+                    confidence=0.95
+                ),
+                AssemblySpec(
+                    assembly_id="ASM-WALL-HOT-RAMMED-INS",
+                    material_id="MAT-RAMMED-INSULATED",
+                    component_type="WALL",
+                    thickness_mm=400.0,
+                    u_value=0.28,
+                    r_value=3.57,
+                    embodied_carbon_kgCO2_m2=15.0,
+                    cost_index=2.8,
+                    constructability_speed="SPECIALIZED",
+                    local_availability="LOCAL_PRIMARY",
+                    description="300mm Rammed Earth Core + 100mm Exterior XPS Insulation (Extreme Thermal Mass Battery)",
+                    confidence=0.96
+                ),
+                AssemblySpec(
+                    assembly_id="ASM-WALL-HOT-REV-BRICK",
+                    material_id="MAT-REVERSE-BRICK",
+                    component_type="WALL",
+                    thickness_mm=250.0,
+                    u_value=0.45,
+                    r_value=2.22,
+                    embodied_carbon_kgCO2_m2=26.0,
+                    cost_index=2.4,
+                    constructability_speed="STANDARD",
+                    local_availability="LOCAL_PRIMARY",
+                    description="110mm Internal Brick (Thermal Mass) + 90mm EPS Insulation + Lightweight Cladding (Reverse Brick Veneer)",
+                    confidence=0.94
                 )
             ],
             "ROOF": [
@@ -255,6 +367,20 @@ class ModelA_EnvelopeSelector:
                     local_availability="LOCAL_PRIMARY",
                     description="150mm Concrete Slab + Inverted 50mm Foam + High-Albedo White Broken China Mosaic (Cool Roof)",
                     confidence=0.95
+                ),
+                AssemblySpec(
+                    assembly_id="ASM-ROOF-HOT-RADIANT-FOIL",
+                    material_id="MAT-RADIANT-FOIL",
+                    component_type="ROOF",
+                    thickness_mm=160.0,
+                    u_value=0.30,
+                    r_value=3.33,
+                    embodied_carbon_kgCO2_m2=18.0,
+                    cost_index=2.8,
+                    constructability_speed="RAPID",
+                    local_availability="REGIONAL",
+                    description="100mm SIP Panel + Double-Sided Reflective Radiant Aluminum Foil Barrier under Metal Decking",
+                    confidence=0.97
                 )
             ],
             "FLOOR": [
@@ -289,6 +415,34 @@ class ModelA_EnvelopeSelector:
                     local_availability="LOCAL_PRIMARY",
                     description="Double Clay Brick with 50mm Ventilated Air Cavity Buffer",
                     confidence=0.88
+                ),
+                AssemblySpec(
+                    assembly_id="ASM-WALL-WARM-HEMPCRETE",
+                    material_id="MAT-HEMPCRETE",
+                    component_type="WALL",
+                    thickness_mm=300.0,
+                    u_value=0.65,
+                    r_value=1.53,
+                    embodied_carbon_kgCO2_m2=-15.0,
+                    cost_index=2.5,
+                    constructability_speed="STANDARD",
+                    local_availability="REGIONAL",
+                    description="300mm Cast Hempcrete (Carbon Negative) - Excellent moisture regulation for humid climates",
+                    confidence=0.93
+                ),
+                AssemblySpec(
+                    assembly_id="ASM-WALL-WARM-LGSF",
+                    material_id="MAT-LGSF-PORTAL",
+                    component_type="WALL",
+                    thickness_mm=150.0,
+                    u_value=0.45,
+                    r_value=2.22,
+                    embodied_carbon_kgCO2_m2=40.0,
+                    cost_index=3.0,
+                    constructability_speed="RAPID",
+                    local_availability="IMPORTED",
+                    description="Light Gauge Steel Frame with PUF Insulated Panels (Large Span Community)",
+                    confidence=0.96
                 )
             ],
             "ROOF": [
@@ -305,6 +459,20 @@ class ModelA_EnvelopeSelector:
                     local_availability="LOCAL_PRIMARY",
                     description="Ventilated Double-Skin Roof with Radiant Foil Barrier",
                     confidence=0.90
+                ),
+                AssemblySpec(
+                    assembly_id="ASM-ROOF-WARM-PTFE",
+                    material_id="MAT-PTFE-MEMBRANE",
+                    component_type="ROOF",
+                    thickness_mm=2.0,
+                    u_value=1.5,
+                    r_value=0.66,
+                    embodied_carbon_kgCO2_m2=22.0,
+                    cost_index=3.5,
+                    constructability_speed="RAPID",
+                    local_availability="IMPORTED",
+                    description="Tensioned PTFE Fiberglass Membrane Roof (Large Span Shade for Community Shelters)",
+                    confidence=0.95
                 )
             ],
             "FLOOR": [

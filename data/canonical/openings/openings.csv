@@ -1,5 +1,0 @@
-opening_id,geometry_id,opening_type,surface_orientation,width_m,height_m,area_m2,glazing_type,u_value_W_m2K,shgc,frame_type,operability,weather_stripped,source_id,evidence_status
-OPN-LEH-SOUTH-WIN,GEOM-LEH-PASSIVE-01,WINDOW,South,2.0,1.5,3.0,double,2.4,0.65,uPVC thermal break,Operable top hopper,True,SRC-LADAKH-REGS-2023,VALUE_VERIFIED
-OPN-LEH-NORTH-WIN,GEOM-LEH-PASSIVE-01,WINDOW,North,0.8,0.6,0.48,double,2.4,0.6,uPVC thermal break,Fixed sealed,True,SRC-LADAKH-REGS-2023,VALUE_VERIFIED
-OPN-LEH-EAST-DOOR,GEOM-LEH-PASSIVE-01,DOOR,East,1.0,2.0,2.0,solid_insulated,1.2,0.0,Insulated timber core + weatherstrip seal,Hinged entry with airlock vestibule,True,SRC-NBC-INDIA-2016,VALUE_VERIFIED
-OPN-LEH-RABSAL-SUNSPACE,GEOM-LEH-PASSIVE-01,RABSAL_SUNSPACE,South,3.5,2.2,7.7,double_low_e,1.8,0.7,Traditional cedar/poplar wood mullions with gaskets,Ventilated dampers to indoor living space,True,SRC-LADAKH-REGS-2023,VALUE_VERIFIED

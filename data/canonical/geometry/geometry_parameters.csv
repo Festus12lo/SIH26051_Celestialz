@@ -1,5 +1,0 @@
-geometry_id,geometry_type_id,length_m,width_m,height_m,floor_area_m2,gross_wall_area_m2,net_wall_area_m2,roof_area_m2,volume_m3,aspect_ratio,surface_to_volume_ratio,roof_pitch_deg,geometric_constraints
-GEOM-LEH-PASSIVE-01,GEOM-TYPE-RECT-PITCHED,6.0,4.0,2.8,24.0,56.0,42.82,27.71,67.2,1.5,1.52,30.0,"Max length 12m, aspect ratio 1.3 - 1.8 for solar efficiency."
-GEOM-LEH-TRAD-01,GEOM-TYPE-RECT-FLAT,5.0,4.0,2.6,20.0,46.8,42.8,20.0,52.0,1.25,1.67,0.0,Flat roof mud-straw layer requires 150-200mm slope to parapet scuppers.
-GEOM-SHIMLA-COLD-01,GEOM-TYPE-COMPACT-GABLED,7.0,5.0,3.0,35.0,72.0,64.0,42.73,105.0,1.4,1.43,35.0,Steep 35 deg pitch mandatory for snow shedding and monsoon drainage.
-GEOM-WARM-BENCH-01,GEOM-TYPE-RECT-FLAT,6.0,5.0,3.0,30.0,66.0,57.0,30.0,90.0,1.2,1.41,0.0,High ceiling (3.0m) to promote thermal stratification in warm climates.

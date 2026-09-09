@@ -42,57 +42,57 @@ class ModelF_AlternativeGenerator:
     MODEL_NAME = "ModelF_AlternativeGenerator"
     MODEL_VERSION = "2.0.0-archetype-synthesizer"
 
-    # The 5 Core Bioclimatic Archetypes
+    # The 5 Core Bioclimatic Archetypes mapped to the 3 Typologies + specialized survival modes
     ARCHETYPES = [
         AlternativeArchetypeSpec(
-            archetype_id="OPTIMAL_PASSIVE",
-            label="High-Performance Passive Solar Optimal",
+            archetype_id="RAPID_EMERGENCY_MILITARY",
+            label="Rapid Emergency Deployment (Military Grade)",
+            target_aspect_ratio=1.35,
+            wall_preference="SIP-MILITARY",
+            roof_preference="AEROGEL-TEXTILE",
+            solar_feature="DIRECT_GAIN",
+            primary_design_intent="Emergency Type: Enable ultra-rapid airdrop deployment within 12 hours using prefabricated, extremely insulated lightweight aluminum SIPs and Aerogel textiles.",
+            trade_off_summary="Highest upfront material cost but absolutely critical for rapid deployment and extreme cold survival; extremely low weight."
+        ),
+        AlternativeArchetypeSpec(
+            archetype_id="HEAT_WAVE_SURVIVAL",
+            label="Extreme Heat Wave Survival (Community/Permanent)",
+            target_aspect_ratio=1.50,
+            wall_preference="PCM-BOARD",
+            roof_preference="RADIANT-FOIL",
+            solar_feature="CROSS_VENT",
+            primary_design_intent="Community/Permanent Type: Maximize indoor cooling during extreme heat waves using latent heat absorption (PCMs) and solar rejection (Radiant barriers).",
+            trade_off_summary="Requires high investment in specialized materials (Phase Change Materials) but prevents lethal indoor overheating during summer extremes."
+        ),
+        AlternativeArchetypeSpec(
+            archetype_id="PERMANENT_PASSIVE",
+            label="High-Performance Permanent (Passive Solar)",
             target_aspect_ratio=1.80,
-            wall_preference="CSEB",
+            wall_preference="RAMMED-INSULATED",
             roof_preference="XPS",
             solar_feature="RABSAL_SUNSPACE",
-            primary_design_intent="Maximize winter temperature lift and passive solar collection through high thermal mass and an enclosed solar sunspace.",
-            trade_off_summary="Highest thermal performance and comfort stability; requires moderate construction time and insulated components."
+            primary_design_intent="Permanent Type: Maximize winter temperature lift and passive solar collection through high thermal mass placed inside an insulated envelope.",
+            trade_off_summary="Highest thermal comfort stability for long-term living; requires heavy machinery and extended construction time."
         ),
         AlternativeArchetypeSpec(
-            archetype_id="LOW_COST_MODULAR",
-            label="Low-Cost & Material-Efficient Modular",
-            target_aspect_ratio=1.50,
-            wall_preference="RAMMED",
-            roof_preference="THATCH",
-            solar_feature="DIRECT_GAIN",
-            primary_design_intent="Minimize material cost and fabrication complexity through modular rectangular geometry and direct-gain glazing.",
-            trade_off_summary="Extremely affordable and resource-efficient; slightly lower solar aperture than sunspace models."
-        ),
-        AlternativeArchetypeSpec(
-            archetype_id="VERNACULAR_LOCAL",
-            label="Local-Material Vernacular Heritage",
-            target_aspect_ratio=1.60,
-            wall_preference="RAMMED",
-            roof_preference="THATCH",
-            solar_feature="DIRECT_GAIN",
-            primary_design_intent="Utilize 100% locally available raw materials (earth, stone, thatch) with zero imported embodied carbon.",
-            trade_off_summary="Ultra-low carbon footprint and high thermal mass; requires local artisanal labor and regular exterior render maintenance."
-        ),
-        AlternativeArchetypeSpec(
-            archetype_id="RAPID_EMERGENCY",
-            label="Rapid Emergency Post-Disaster Deployment",
-            target_aspect_ratio=1.35,
-            wall_preference="TIMBER",
-            roof_preference="XPS",
-            solar_feature="DIRECT_GAIN",
-            primary_design_intent="Enable rapid dry assembly within 48 hours using prefabricated lightweight insulated timber panelized modules.",
-            trade_off_summary="Fastest deployment speed; lower thermal inertia requires airtight detailing."
+            archetype_id="MODULAR_COMMUNITY",
+            label="Large-Span Modular Community Shelter",
+            target_aspect_ratio=1.20,
+            wall_preference="LGSF-PORTAL",
+            roof_preference="PTFE-MEMBRANE",
+            solar_feature="CROSS_VENT",
+            primary_design_intent="Community Type: Create massive, column-free shaded spans for high-occupancy use using Light Gauge Steel Frames and Tensioned Fabrics.",
+            trade_off_summary="Very rapid to deploy large areas; lower internal thermal mass compared to permanent structures."
         ),
         AlternativeArchetypeSpec(
             archetype_id="BALANCED_CONSTRUCTABILITY",
             label="Balanced Thermal & Constructability Hybrid",
-            target_aspect_ratio=1.50,
-            wall_preference="CSEB",
-            roof_preference="XPS",
+            target_aspect_ratio=1.60,
+            wall_preference="HEMPCRETE",
+            roof_preference="CONCRETE",
             solar_feature="DIRECT_GAIN",
-            primary_design_intent="Achieve the optimal balance between high thermal insulation, structural durability, and straightforward contractor buildability.",
-            trade_off_summary="Robust all-around design with strong structural longevity, excellent insulation, and predictable construction costs."
+            primary_design_intent="Achieve the optimal balance between high thermal insulation, structural durability, and moisture regulation.",
+            trade_off_summary="Robust all-around design with excellent indoor air quality and predictable construction costs."
         )
     ]
 

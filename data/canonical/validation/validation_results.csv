@@ -1,5 +1,0 @@
-validation_id,design_case_id,rule_id,evaluated_parameter,actual_value,expected_condition,status,validation_timestamp,notes
-VAL-LEH-001,CASE-LEH-PASSIVE-V1,RULE-ENG-001,wall_u_value,0.417 W/m2K,<= 0.45 W/m2K,PASS,2026-08-27T22:30:00Z,Complies with Ladakh Building Regulations 2023 maximum cold-climate envelope transmittance.
-VAL-LEH-002,CASE-LEH-PASSIVE-V1,RULE-ENG-002,roof_r_value,4.045 m2K/W,>= 2.50 m2K/W,PASS,2026-08-27T22:30:00Z,150mm thatch + 50mm mud + 100mm timber deck provides continuous insulation exceeding R=2.50 mandate.
-VAL-LEH-003,CASE-LEH-PASSIVE-V1,RULE-ENG-004,total_opening_area,13.18 m2 (Gross: 56.0 m2),< gross_wall_area,PASS,2026-08-27T22:30:00Z,"Total opening area is 13.18 m2 (23.5% of gross wall), within structural boundaries."
-VAL-JAIPUR-001,CASE-JAIPUR-COMPOSITE-01,RULE-ENG-001,wall_u_value,1.302 W/m2K,<= 0.45 W/m2K (if applied to cold zone),NOT_APPLICABLE,2026-08-27T22:30:00Z,Rule is specific to cold-alpine zone; not applicable to Jaipur hot climate.

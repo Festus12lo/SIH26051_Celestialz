@@ -1,3 +1,0 @@
-training_example_id,provenance_type,confidence_score,design_case_id,location_id,selected_geometry_type,selected_wall_assembly,predicted_avg_indoor_temp_C,validation_status
-TRAIN-EX-LEH-001,PHYSICS_SIMULATION,0.95,CASE-LEH-PASSIVE-V1,LOC-IN-LEH,GEOM-TYPE-RECT-PITCHED,ASM-WALL-LADAKH-IMP-TRAD (300mm Rammed Earth + 80mm Rockwool),8.42,ALL_RULES_PASSED
-TRAIN-EX-LEH-002,PHYSICS_SIMULATION,0.98,CASE-LEH-MODERN-CSEB,LOC-IN-LEH,GEOM-TYPE-RECT-PITCHED,ASM-WALL-LADAKH-INS-MOD (230mm CSEB + 100mm Rockwool + Air Cavity),12.8,ALL_RULES_PASSED
