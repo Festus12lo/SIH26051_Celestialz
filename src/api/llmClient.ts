@@ -1,3 +1,5 @@
+import { getApiKey } from '../utils/keyStore';
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -12,9 +14,16 @@ export const chatWithArchitect = async (
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
 
-    const response = await fetch('http://localhost:8000/api/llm/chat', {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    const response = await fetch(`${API_BASE_URL}/api/llm/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-Gemini-Key': getApiKey('gemini'),
+        'X-Groq-Key': getApiKey('groq'),
+        'X-OpenRouter-Key': getApiKey('openrouter'),
+        'X-Nvidia-Key': getApiKey('nvidia')
+      },
       body: JSON.stringify({ messages, climateContext }),
       signal: controller.signal,
     });
@@ -32,7 +41,14 @@ export const chatWithArchitect = async (
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
+        let chunk = decoder.decode(value, { stream: true });
+        
+        if (chunk.includes('__RATE_LIMIT_HIT__')) {
+          localStorage.setItem('rateLimitHit', 'true');
+          window.dispatchEvent(new Event('rate_limit_hit'));
+          chunk = chunk.replace('__RATE_LIMIT_HIT__', '');
+        }
+        
         fullText += chunk;
         onUpdate(fullText);
       }
@@ -40,20 +56,23 @@ export const chatWithArchitect = async (
     } else {
       // Fallback if not streaming
       const text = await response.text();
+      let finalText = text;
       // It might be JSON if it was the old fallback, but the new backend returns raw text
       try {
         const data = JSON.parse(text);
-        if (data && data.response) return data.response;
-      } catch {
-        return text;
-      }
-      return text;
+        if (data && data.response) finalText = data.response;
+      } catch {}
+      
+      if (onUpdate) onUpdate(finalText);
+      return finalText;
     }
   } catch (err) {
     console.warn('Backend chat unreachable or failed. Engaging client-side ThermoShelter reasoning engine fallback:', err);
     
     // High-fidelity fallback reasoning engine
-    return getFallbackResponse(messages, climateContext);
+    const fallbackText = getFallbackResponse(messages, climateContext);
+    if (onUpdate) onUpdate(fallbackText);
+    return fallbackText;
   }
 };
 
@@ -95,15 +114,38 @@ Analyzing requirements for **${loc}**...
 *How would you like to configure your shelter? You can specify occupancy, budget constraints, or particular climate goals.*`;
 }
 
+export interface ResolvedLocation {
+  city: string;
+  state: string;
+  lat: number;
+  lon: number;
+  display_name: string;
+}
+
 export const generateBlueprint = async (
   messages: ChatMessage[],
-  climateContext?: { location: string; temp: string; condition: string }
+  climateContext?: { location: string; temp: string; condition: string },
+  resolvedLocation?: ResolvedLocation,
+  shelterType?: string
 ): Promise<any> => {
   try {
-    const response = await fetch('http://localhost:8000/api/llm/parse-requirements', {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    const response = await fetch(`${API_BASE_URL}/api/llm/parse-requirements`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, climateContext }),
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-Gemini-Key': getApiKey('gemini'),
+        'X-Groq-Key': getApiKey('groq'),
+        'X-OpenRouter-Key': getApiKey('openrouter'),
+        'X-Nvidia-Key': getApiKey('nvidia')
+      },
+      body: JSON.stringify({ 
+        messages, 
+        climateContext, 
+        resolvedLocation, 
+        shelterType,
+        building_type: shelterType 
+      }),
     });
 
     if (!response.ok) {
@@ -112,6 +154,10 @@ export const generateBlueprint = async (
 
     const data = await response.json();
     if (data.status === 'success') {
+      if (data.blueprint?.meta?.rate_limit_hit) {
+        localStorage.setItem('rateLimitHit', 'true');
+        window.dispatchEvent(new Event('rate_limit_hit'));
+      }
       return data.blueprint;
     } else {
       throw new Error(data.message || 'Failed to generate blueprint');

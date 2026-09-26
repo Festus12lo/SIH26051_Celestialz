@@ -1,32 +1,22 @@
 import React from 'react';
 import { Sun, Wind, ShieldAlert, Activity, Info, BarChart2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  Legend
+} from 'recharts';
 
 interface PhysicsVisualizerProps {
   data: any;
 }
-
-const ProgressBar = ({ label, value, max, unit, color, delay }: { label: string, value: number, max: number, unit: string, color: string, delay: number }) => {
-  const percentage = Math.min((value / max) * 100, 100);
-  
-  return (
-    <div className="mb-6">
-      <div className="flex justify-between items-end mb-2">
-        <span className="text-sm font-semibold text-white/80 uppercase tracking-wider">{label}</span>
-        <span className="text-lg font-bold text-white">{value.toFixed(1)} <span className="text-sm font-normal text-white/50">{unit}</span></span>
-      </div>
-      <div className="h-3 w-full bg-black/50 rounded-full overflow-hidden border border-white/5 relative">
-        <motion.div 
-          initial={{ width: 0 }}
-          whileInView={{ width: `${percentage}%` }}
-          viewport={{ once: true }}
-          transition={{ duration: 1.2, delay, ease: "easeOut" }}
-          className={`h-full ${color} shadow-[0_0_10px_currentColor]`}
-        />
-      </div>
-    </div>
-  );
-};
 
 export default function PhysicsVisualizer({ data }: PhysicsVisualizerProps) {
   if (!data) return null;
@@ -34,9 +24,31 @@ export default function PhysicsVisualizer({ data }: PhysicsVisualizerProps) {
   const rValue = data.walls?.r_value_si || data.architecture?.wall_assembly?.r_value_total || 2.5;
   const climateZone = data.climate?.zone || data.location?.climate_zone || 'moderate';
   
-  // Fake some analytical data based on R-Value for the bars
+  // Simulated analytics data
   const uValue = 1 / (rValue || 2.5);
-  const thermalMassIndex = (rValue || 2.5) * 1.5 + 2; // Arbitrary calculation for visualization
+  const thermalMassIndex = (rValue || 2.5) * 1.5 + 2; 
+  
+  const barData = [
+    { name: 'R-Value', value: rValue, fill: '#06b6d4' }, // cyan-500
+    { name: 'U-Value (x10)', value: uValue * 10, fill: '#f97316' }, // orange-500 scaled for visibility
+    { name: 'Thermal Mass', value: thermalMassIndex, fill: '#10b981' }, // emerald-500
+  ];
+
+  // Simulated 24-hour temperature profile
+  const baseExt = climateZone.includes('cold') ? -5 : (climateZone.includes('hot') ? 35 : 20);
+  const swingExt = climateZone.includes('cold') ? 10 : (climateZone.includes('hot') ? 15 : 10);
+  const baseInt = 20;
+  const swingInt = swingExt * (uValue / 2); // Dampened by insulation
+
+  const tempData = Array.from({ length: 24 }, (_, i) => {
+    const extTemp = baseExt + Math.sin((i - 6) * Math.PI / 12) * swingExt;
+    const intTemp = baseInt + Math.sin((i - 8) * Math.PI / 12) * swingInt;
+    return {
+      time: `${i}:00`,
+      External: Math.round(extTemp),
+      Internal: Math.round(intTemp),
+    };
+  });
 
   return (
     <div className="w-full mt-12 bg-[#1A1A1B] border border-white/10 rounded-3xl p-8 lg:p-12 text-white overflow-hidden shadow-2xl relative">
@@ -58,39 +70,60 @@ export default function PhysicsVisualizer({ data }: PhysicsVisualizerProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-10">
         
-        {/* Left Column: Analytics Bars */}
-        <div className="bg-black/30 border border-white/5 p-8 rounded-3xl backdrop-blur-sm">
-          <div className="flex items-center gap-3 mb-8 pb-4 border-b border-white/10">
+        {/* Left Column: Analytics Charts */}
+        <div className="bg-black/30 border border-white/5 p-8 rounded-3xl backdrop-blur-sm flex flex-col gap-8">
+          <div className="flex items-center gap-3 border-b border-white/10 pb-4">
              <BarChart2 className="text-cyan-400" size={24} />
              <h3 className="text-xl font-semibold">Material Thermodynamics</h3>
           </div>
           
-          <ProgressBar 
-            label="R-Value (Thermal Resistance)" 
-            value={rValue} 
-            max={8} 
-            unit="m²·K/W" 
-            color="bg-gradient-to-r from-cyan-500 to-blue-500" 
-            delay={0.2} 
-          />
-          <ProgressBar 
-            label="U-Value (Thermal Transmittance)" 
-            value={uValue} 
-            max={1.5} 
-            unit="W/m²·K" 
-            color="bg-gradient-to-r from-red-500 to-orange-500" 
-            delay={0.4} 
-          />
-          <ProgressBar 
-            label="Thermal Mass Index" 
-            value={thermalMassIndex} 
-            max={15} 
-            unit="kJ/m²·K" 
-            color="bg-gradient-to-r from-emerald-500 to-green-500" 
-            delay={0.6} 
-          />
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" vertical={false} />
+                <XAxis dataKey="name" stroke="#ffffff80" tick={{ fill: '#ffffff80', fontSize: 12 }} />
+                <YAxis stroke="#ffffff80" tick={{ fill: '#ffffff80', fontSize: 12 }} />
+                <Tooltip 
+                  cursor={{ fill: '#ffffff10' }}
+                  contentStyle={{ backgroundColor: '#1A1A1B', borderColor: '#ffffff20', color: '#fff', borderRadius: '8px' }}
+                />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="flex items-center gap-3 border-b border-white/10 pb-4 pt-4">
+             <Activity className="text-purple-400" size={24} />
+             <h3 className="text-xl font-semibold">Simulated 24h Temp Profile (°C)</h3>
+          </div>
+
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={tempData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorInt" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorExt" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f97316" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" vertical={false} />
+                <XAxis dataKey="time" stroke="#ffffff80" tick={{ fill: '#ffffff80', fontSize: 10 }} />
+                <YAxis stroke="#ffffff80" tick={{ fill: '#ffffff80', fontSize: 12 }} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#1A1A1B', borderColor: '#ffffff20', color: '#fff', borderRadius: '8px' }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                <Area type="monotone" dataKey="External" stroke="#f97316" fillOpacity={1} fill="url(#colorExt)" />
+                <Area type="monotone" dataKey="Internal" stroke="#06b6d4" fillOpacity={1} fill="url(#colorInt)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
           
-          <div className="mt-8 p-4 bg-white/5 rounded-xl border border-white/10 text-sm text-white/70 leading-relaxed">
+          <div className="p-4 bg-white/5 rounded-xl border border-white/10 text-sm text-white/70 leading-relaxed">
              <strong>Theory:</strong> The inverse relationship between R-Value and U-Value determines the heat flow rate ($Q = U \cdot A \cdot \Delta T$). A higher Thermal Mass absorbs excess heat during the day and releases it at night, damping temperature swings.
           </div>
         </div>

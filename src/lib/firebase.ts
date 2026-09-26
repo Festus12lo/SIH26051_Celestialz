@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, browserSessionPersistence, setPersistence, type Auth } from "firebase/auth";
 
 // Your web app's Firebase configuration
 // Ensure you have these environment variables set in your .env.local file
@@ -14,13 +14,17 @@ const firebaseConfig = {
 
 // Initialize Firebase
 let app;
-let auth: any = null;
-let googleProvider: any = null;
+let auth: Auth | null = null;
+let googleProvider: GoogleAuthProvider | null = null;
 
 try {
   if (firebaseConfig.apiKey) {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
+    // Use session persistence - user is signed out when browser tab closes
+    setPersistence(auth, browserSessionPersistence).catch((err) => {
+      console.warn("Could not set browser session persistence:", err);
+    });
     googleProvider = new GoogleAuthProvider();
   } else {
     console.warn("Firebase API Key is missing. Authentication will not work until you configure your .env.local file.");

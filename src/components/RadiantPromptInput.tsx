@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Mic, ArrowUp, History, X } from 'lucide-react';
+import { Sparkles, ArrowUp, History, X, Command } from 'lucide-react';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -19,7 +19,7 @@ export interface RadiantPromptInputProps {
 }
 
 export function RadiantPromptInput({
-  placeholder = "Ask anything...",
+  placeholder = "Ask about passive cooling, thermal mass, or site bioclimatics...",
   value: propValue,
   onChange: propOnChange,
   onSubmit,
@@ -29,23 +29,21 @@ export function RadiantPromptInput({
   historyKey = "radiant_input_history"
 }: RadiantPromptInputProps) {
   const [internalValue, setInternalValue] = useState("");
-  const [history, setHistory] = useState<string[]>([]);
+  const [history, setHistory] = useState<string[]>(() => {
+    if (showHistory) {
+      try {
+        const stored = localStorage.getItem(historyKey);
+        if (stored) return JSON.parse(stored);
+      } catch (err) {}
+    }
+    return [];
+  });
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   const isControlled = propValue !== undefined;
   const value = isControlled ? propValue : internalValue;
-
-  useEffect(() => {
-    if (showHistory) {
-      try {
-        const stored = localStorage.getItem(historyKey);
-        if (stored) {
-          setHistory(JSON.parse(stored));
-        }
-      } catch (e) { }
-    }
-  }, [showHistory, historyKey]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -65,7 +63,7 @@ export function RadiantPromptInput({
   };
 
   const handleSubmit = (overrideValue?: string) => {
-    const submitValue = overrideValue || value;
+    const submitValue = (overrideValue || value).trim();
     if (submitValue && !disabled) {
       if (showHistory) {
         const newHistory = [submitValue, ...history.filter(h => h !== submitValue)].slice(0, 5);
@@ -87,83 +85,20 @@ export function RadiantPromptInput({
 
   return (
     <div ref={wrapperRef} className={cn("relative w-full max-w-2xl mx-auto", className)}>
-      {/* 
-        Custom CSS for the gradient animation using @property which Tailwind doesn't fully support inline yet.
-        We use a unique class scope 'radiant-input-wrapper' to avoid conflicts.
-      */}
-      <style>{`
-        @property --rotation {
-          syntax: '<angle>';
-          inherits: false;
-          initial-value: 0deg;
-        }
-        
-        @keyframes rotate-gradient {
-          to {
-            --rotation: 360deg;
-          }
-        }
-
-        .radiant-input-wrapper {
-          --border-size: 3px;
-          --gradient: conic-gradient(
-            from var(--rotation) 
-            at 50% 50% in oklab, 
-            oklch(0.63 0.2 251.22) 27%, 
-            oklch(0.67 0.21 25.81) 33%, 
-            oklch(0.9 0.19 93.93) 41%, 
-            oklch(0.79 0.25 150.49) 49%, 
-            oklch(0.63 0.2 251.22) 65%, 
-            oklch(0.72 0.21 150.89) 93%, 
-            oklch(0.63 0.2 251.22)
-          );
-          animation: rotate-gradient 5s infinite linear;
-        }
-
-        /* The glowing border effect */
-        .radiant-input-wrapper::before {
-          content: '';
-          position: absolute;
-          inset: calc(var(--border-size) * -1);
-          border-radius: inherit;
-          background: var(--gradient);
-          z-index: -1;
-          filter: blur(8px);
-          opacity: 0.6;
-        }
-
-        /* The sharp border mask */
-        .radiant-input-border {
-          position: absolute;
-          inset: 0;
-          border-radius: inherit;
-          padding: var(--border-size);
-          background: var(--gradient);
-          -webkit-mask: 
-            linear-gradient(#fff 0 0) content-box, 
-            linear-gradient(#fff 0 0);
-          -webkit-mask-composite: xor;
-          mask-composite: exclude;
-          pointer-events: none;
-        }
-      `}</style>
-
-      <div className="radiant-input-wrapper relative rounded-full bg-white dark:bg-zinc-900 group transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
-        
-        {/* Animated Gradient Border */}
-        <div className="radiant-input-border rounded-full" />
-        
+      <div 
+        className={cn(
+          "relative rounded-2xl bg-[#090d14]/95 backdrop-blur-xl transition-all duration-300 border shadow-2xl",
+          isFocused 
+            ? "border-[#FF5722]/80 shadow-[0_0_25px_rgba(255,87,34,0.18)]" 
+            : "border-white/10 hover:border-white/20"
+        )}
+      >
         {/* Inner Content */}
-        <div className="relative z-10 flex items-center gap-2 p-1.5 pl-4 pr-1.5 h-14 md:h-16">
-          
-          {/* Add Button */}
-          <button 
-            type="button"
-            className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full text-zinc-500 hover:bg-zinc-800 hover:text-white transition-colors"
-            aria-label="Add attachment"
-          >
-            <Plus size={20} strokeWidth={2} />
-          </button>
+        <div className="relative z-10 flex items-center gap-3 p-2 pl-4 pr-2 h-14 md:h-15">
+          {/* Architectural Badge Icon */}
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#FF5722]/10 border border-[#FF5722]/20 text-[#FF5722] shrink-0">
+            <Sparkles size={16} />
+          </div>
 
           {/* Text Input */}
           <input
@@ -171,38 +106,38 @@ export function RadiantPromptInput({
             value={value}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            onFocus={() => showHistory && history.length > 0 && setShowDropdown(true)}
+            onFocus={() => {
+              setIsFocused(true);
+              if (showHistory && history.length > 0) setShowDropdown(true);
+            }}
+            onBlur={() => setIsFocused(false)}
             placeholder={placeholder}
             disabled={disabled}
-            className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-zinc-500 text-base md:text-lg font-light tracking-wide h-full w-full min-w-0"
+            className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-zinc-500 text-sm md:text-base font-normal tracking-normal h-full w-full min-w-0"
           />
 
           {/* Right Actions */}
-          <div className="flex items-center gap-1 md:gap-2">
-            
-            {/* Mic Button */}
-            <button 
-              type="button"
-              className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full text-zinc-500 hover:bg-zinc-800 hover:text-white transition-colors"
-              aria-label="Use microphone"
-            >
-              <Mic size={20} strokeWidth={2} />
-            </button>
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-1 text-[11px] font-mono text-zinc-500 uppercase px-2 py-1 rounded bg-white/5 border border-white/5">
+              <span>Enter</span>
+              <span>↵</span>
+            </div>
 
             {/* Submit Button */}
             <button
               type="button"
               onClick={() => handleSubmit()}
-              disabled={!value || disabled}
+              disabled={!value.trim() || disabled}
               className={cn(
-                "flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full transition-all duration-300",
-                value 
-                  ? "bg-white text-black hover:scale-105 active:scale-95 shadow-md" 
-                  : "bg-zinc-800 text-zinc-500 cursor-not-allowed opacity-50"
+                "flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-xl transition-all duration-200 cursor-pointer",
+                value.trim() && !disabled
+                  ? "bg-[#FF5722] hover:bg-[#FF7043] text-white shadow-[0_0_12px_rgba(255,87,34,0.4)] hover:scale-105 active:scale-95" 
+                  : "bg-white/5 text-zinc-600 cursor-not-allowed border border-white/5"
               )}
-              aria-label="Send message"
+              aria-label="Send architectural instruction"
+              title="Submit Prompt"
             >
-              <ArrowUp size={22} strokeWidth={2.5} />
+              <ArrowUp size={18} strokeWidth={2.5} />
             </button>
           </div>
         </div>
@@ -210,24 +145,25 @@ export function RadiantPromptInput({
 
       {/* History Dropdown */}
       {showHistory && showDropdown && history.length > 0 && (
-        <div className="absolute top-full left-0 w-full mt-4 bg-zinc-900 border border-white/10 rounded-2xl shadow-xl overflow-hidden z-50 animate-in slide-in-from-top-2 fade-in">
-          <div className="p-3 border-b border-white/10 flex justify-between items-center bg-black/20">
-            <div className="flex items-center gap-2 text-white/50 text-xs font-medium uppercase tracking-wider">
-              <History size={14} /> Recent Searches
+        <div className="absolute top-full left-0 w-full mt-2 bg-[#0c111a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in slide-in-from-top-2 fade-in">
+          <div className="p-3 border-b border-white/10 flex justify-between items-center bg-black/40">
+            <div className="flex items-center gap-2 text-white/50 text-[11px] font-mono uppercase tracking-wider">
+              <History size={13} className="text-[#FF5722]" /> Recent Architectural Queries
             </div>
             <button 
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setHistory([]);
                 localStorage.removeItem(historyKey);
                 setShowDropdown(false);
               }}
-              className="text-white/30 hover:text-white/70 text-xs transition-colors"
+              className="text-white/40 hover:text-white/80 text-xs transition-colors cursor-pointer"
             >
               Clear
             </button>
           </div>
-          <ul className="max-h-60 overflow-y-auto p-2">
+          <ul className="max-h-56 overflow-y-auto p-1.5 divide-y divide-white/5">
             {history.map((h, i) => (
               <li key={i}>
                 <button
@@ -237,9 +173,9 @@ export function RadiantPromptInput({
                     propOnChange?.(h);
                     handleSubmit(h);
                   }}
-                  className="w-full text-left px-4 py-3 hover:bg-white/5 rounded-xl text-white/80 hover:text-white text-sm transition-colors flex items-center gap-3"
+                  className="w-full text-left px-3.5 py-2.5 hover:bg-white/5 rounded-xl text-zinc-300 hover:text-white text-xs md:text-sm transition-colors flex items-center gap-2.5 cursor-pointer"
                 >
-                  <History size={16} className="text-white/30" />
+                  <History size={14} className="text-[#FF5722]/60 shrink-0" />
                   <span className="truncate">{h}</span>
                 </button>
               </li>

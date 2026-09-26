@@ -11,7 +11,23 @@ def main():
     print("   Starting ThermoShelter Servers      ")
     print("=======================================")
     
-    # 1. Start Backend (FastAPI via Uvicorn)
+    # 1. Initialize Database
+    print("\n[Setup] Initializing database...")
+    init_db_path = os.path.join(backend_dir, "init_db.py")
+    try:
+        subprocess.run([sys.executable, init_db_path], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"\n[Warning] Database initialization failed: {e}. The app will start but some features may not work.")
+    
+    # 2. Check and Install Node Modules
+    node_modules_path = os.path.join(base_dir, "node_modules")
+    npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
+    
+    if not os.path.exists(node_modules_path):
+        print("\n[Setup] Installing frontend dependencies (this may take a minute)...")
+        subprocess.run([npm_cmd, "install"], cwd=base_dir, check=True)
+    
+    # 3. Start Backend (FastAPI via Uvicorn)
     print("\n[Backend] Starting FastAPI Server on http://localhost:8000...")
     backend_process = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
@@ -21,9 +37,8 @@ def main():
     # Give the backend a second to initialize before starting the frontend log spam
     time.sleep(2)
     
-    # 2. Start Frontend (Vite/React via npm)
+    # 4. Start Frontend (Vite/React via npm)
     print("\n[Frontend] Starting Vite Development Server on http://localhost:5173...")
-    npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
     frontend_process = subprocess.Popen(
         [npm_cmd, "run", "dev"],
         cwd=base_dir

@@ -1,503 +1,396 @@
 import * as THREE from 'three';
 
-/**
- * Creates high-fidelity procedural PBR textures for the Emergency Shelter asset.
- * Runs completely in-browser with HTML5 Canvas, ensuring crisp 2048x2048 / 1024x1024 textures.
- */
+export interface WallPBRMaps {
+  diffuseMap: THREE.CanvasTexture;
+  normalMap: THREE.CanvasTexture;
+  roughnessMap: THREE.CanvasTexture;
+  aoMap: THREE.CanvasTexture;
+}
 
-// Helper to create a canvas
-function createCanvas(width: number, height: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
+// Cache textures by color key so we don't regenerate on every re-render
+const textureCache = new Map<string, WallPBRMaps>();
+
+/**
+ * Generates high-definition procedural PBR textures for architectural composite sandwich panels.
+ * Produces crisp horizontal micro-ribbing (flutes), modular vertical joint reveals with EPDM seals,
+ * powder-coated micro-stipple grain, and structural fastener rivets.
+ */
+export function getWallPBRTextures(
+  primaryHex: string,
+  secondaryHex: string,
+  isBamboo: boolean = false
+): WallPBRMaps {
+  const cacheKey = `${primaryHex}_${secondaryHex}_${isBamboo ? 'bamboo' : 'imp'}`;
+  if (textureCache.has(cacheKey)) {
+    return textureCache.get(cacheKey)!;
+  }
+
+  const size = 1024; // 1024x1024 texture tile representing 1.0m x 1.0m of architectural panel
+
+  // 1. Parse base color RGB
+  const baseColor = new THREE.Color(primaryHex);
+  const baseR = Math.round(baseColor.r * 255);
+  const baseG = Math.round(baseColor.g * 255);
+  const baseB = Math.round(baseColor.b * 255);
+
+  const secColor = new THREE.Color(secondaryHex);
+  const secR = Math.round(secColor.r * 255);
+  const secG = Math.round(secColor.g * 255);
+  const secB = Math.round(secColor.b * 255);
+
+  // Heightfield for normal and AO calculation
+  const heightField = new Float32Array(size * size);
+
+  // -------------------------------------------------------------
+  // A. Generate Diffuse / Albedo Map Canvas
+  // -------------------------------------------------------------
+  const diffuseCanvas = document.createElement('canvas');
+  diffuseCanvas.width = size;
+  diffuseCanvas.height = size;
+  const diffCtx = diffuseCanvas.getContext('2d')!;
+
+  const diffImgData = diffCtx.createImageData(size, size);
+  const diffData = diffImgData.data;
+
+  // -------------------------------------------------------------
+  // B. Generate Normal Map Canvas
+  // -------------------------------------------------------------
+  const normalCanvas = document.createElement('canvas');
+  normalCanvas.width = size;
+  normalCanvas.height = size;
+  const normCtx = normalCanvas.getContext('2d')!;
+  const normImgData = normCtx.createImageData(size, size);
+  const normData = normImgData.data;
+
+  // -------------------------------------------------------------
+  // C. Generate Roughness Map Canvas
+  // -------------------------------------------------------------
+  const roughCanvas = document.createElement('canvas');
+  roughCanvas.width = size;
+  roughCanvas.height = size;
+  const roughCtx = roughCanvas.getContext('2d')!;
+  const roughImgData = roughCtx.createImageData(size, size);
+  const roughData = roughImgData.data;
+
+  // -------------------------------------------------------------
+  // D. Generate Ambient Occlusion Canvas
+  // -------------------------------------------------------------
+  const aoCanvas = document.createElement('canvas');
+  aoCanvas.width = size;
+  aoCanvas.height = size;
+  const aoCtx = aoCanvas.getContext('2d')!;
+  const aoImgData = aoCtx.createImageData(size, size);
+  const aoData = aoImgData.data;
+
+  // 1. Build mathematical height field & fill diffuse/roughness maps
+  const ribCount = 10; // 10 horizontal micro-rib flutes per 1.0m height (~100mm spacing)
+  const ribPeriod = size / ribCount; // 102.4px per rib
+  const jointWidthPx = 16; // 16px wide modular joint reveal (~15.6mm)
+
+  for (let y = 0; y < size; y++) {
+    const yNorm = y / size;
+
+    // Horizontal flute height profile
+    const ribPos = (y % ribPeriod) / ribPeriod; // 0.0 to 1.0
+    let ribHeight = 0;
+    let ribFactor = 0; // -1 for shadow trough, 0 for crest, +1 for highlight crest
+
+    if (ribPos < 0.15) {
+      // Top bevel transition
+      ribHeight = Math.sin((ribPos / 0.15) * (Math.PI / 2)) * 0.4;
+      ribFactor = 0.5 * (1 - ribPos / 0.15);
+    } else if (ribPos < 0.7) {
+      // Flat rib crest with fine micro-camber
+      ribHeight = 0.4 + Math.sin(((ribPos - 0.15) / 0.55) * Math.PI) * 0.1;
+      ribFactor = 0.05;
+    } else {
+      // Bottom bevel shadow trough
+      const t = (ribPos - 0.7) / 0.3;
+      ribHeight = (1 - t) * 0.4;
+      ribFactor = -0.5 * t;
+    }
+
+    for (let x = 0; x < size; x++) {
+      const idx = (y * size + x);
+      const pixelIdx = idx * 4;
+
+      // Distance from modular vertical panel edge (x = 0 or x = size)
+      const distToEdge = Math.min(x, size - x);
+      let jointDepth = 0;
+      let isJoint = false;
+
+      if (distToEdge < jointWidthPx) {
+        isJoint = true;
+        const jt = distToEdge / jointWidthPx;
+        jointDepth = -0.7 * (1 - jt);
+      }
+
+      // Fastener rivets (near y = 40 and y = 984, at x = 32 and x = size - 32)
+      let rivetHeight = 0;
+      let isRivet = false;
+      const isRivetRow = Math.abs(y - 40) < 10 || Math.abs(y - 984) < 10;
+      if (isRivetRow) {
+        const rivetDistX1 = Math.abs(x - 32);
+        const rivetDistX2 = Math.abs(x - (size - 32));
+        const rivetDistX3 = Math.abs(x - 512);
+        const minDistX = Math.min(rivetDistX1, rivetDistX2, rivetDistX3);
+        const rDist = Math.sqrt(minDistX * minDistX + Math.pow((y < 500 ? y - 40 : y - 984), 2));
+        if (rDist < 7) {
+          isRivet = true;
+          rivetHeight = 0.6 * Math.cos((rDist / 7) * (Math.PI / 2));
+        }
+      }
+
+      // Micro-stipple noise for powder-coated matte metal surface
+      const noise = ((Math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1) - 0.5;
+      const stipple = noise * 0.035;
+
+      const totalH = (isJoint ? jointDepth : ribHeight) + rivetHeight + stipple;
+      heightField[idx] = totalH;
+
+      // Calculate Diffuse RGB
+      let r = baseR;
+      let g = baseG;
+      let b = baseB;
+      let roughnessVal = 135; // base architectural powder-coat ~0.53
+      let aoVal = 255;
+
+      if (isBamboo) {
+        // Organic longitudinal bamboo fibrous grain
+        const grain = Math.sin(x * 0.8 + noise * 4.0) * 12 + Math.cos(x * 0.15) * 8;
+        r = Math.max(0, Math.min(255, r + grain));
+        g = Math.max(0, Math.min(255, g + grain * 0.9));
+        b = Math.max(0, Math.min(255, b + grain * 0.7));
+      } else {
+        // Architectural Composite IMP Finish
+        if (isJoint) {
+          // Weatherproof dark EPDM joint channel
+          r = Math.round(r * 0.28 + 25);
+          g = Math.round(g * 0.28 + 30);
+          b = Math.round(b * 0.28 + 38);
+          roughnessVal = 245; // High matte rubber seal
+          aoVal = Math.round(80 + (distToEdge / jointWidthPx) * 120);
+        } else if (isRivet) {
+          // Stainless steel structural rivet head
+          r = Math.round(secR * 0.75 + 60);
+          g = Math.round(secG * 0.75 + 65);
+          b = Math.round(secB * 0.75 + 75);
+          roughnessVal = 55; // Semi-reflective metal
+        } else {
+          // Micro-rib highlight/shadow modulation & powder coat noise
+          const lightMod = ribFactor * 32 + noise * 16;
+          r = Math.max(0, Math.min(255, Math.round(r + lightMod)));
+          g = Math.max(0, Math.min(255, Math.round(g + lightMod)));
+          b = Math.max(0, Math.min(255, Math.round(b + lightMod)));
+          roughnessVal = Math.round(135 - ribFactor * 25 + noise * 10);
+          if (ribFactor < -0.2) aoVal = 220;
+        }
+      }
+
+      // Write Diffuse
+      diffData[pixelIdx] = r;
+      diffData[pixelIdx + 1] = g;
+      diffData[pixelIdx + 2] = b;
+      diffData[pixelIdx + 3] = 255;
+
+      // Write Roughness
+      roughData[pixelIdx] = roughnessVal;
+      roughData[pixelIdx + 1] = roughnessVal;
+      roughData[pixelIdx + 2] = roughnessVal;
+      roughData[pixelIdx + 3] = 255;
+
+      // Write AO
+      aoData[pixelIdx] = aoVal;
+      aoData[pixelIdx + 1] = aoVal;
+      aoData[pixelIdx + 2] = aoVal;
+      aoData[pixelIdx + 3] = 255;
+    }
+  }
+
+  // 2. Compute Normal Map from Height Field (Sobel / Central Difference)
+  const bumpStrength = isBamboo ? 1.8 : 2.6;
+
+  for (let y = 0; y < size; y++) {
+    const ym1 = (y - 1 + size) % size;
+    const yp1 = (y + 1) % size;
+
+    for (let x = 0; x < size; x++) {
+      const xm1 = (x - 1 + size) % size;
+      const xp1 = (x + 1) % size;
+
+      const idxL = y * size + xm1;
+      const idxR = y * size + xp1;
+      const idxT = ym1 * size + x;
+      const idxB = yp1 * size + x;
+
+      // Central difference gradients
+      const dx = (heightField[idxR] - heightField[idxL]) * bumpStrength;
+      const dy = (heightField[idxB] - heightField[idxT]) * bumpStrength;
+
+      // Normal vector in tangent space (-dx, -dy, 1)
+      const nx = -dx;
+      const ny = -dy;
+      const nz = 1.0;
+      const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+
+      const normX = nx / len;
+      const normY = ny / len;
+      const normZ = nz / len;
+
+      const pIdx = (y * size + x) * 4;
+      normData[pIdx] = Math.round((normX * 0.5 + 0.5) * 255);
+      normData[pIdx + 1] = Math.round((normY * 0.5 + 0.5) * 255);
+      normData[pIdx + 2] = Math.round((normZ * 0.5 + 0.5) * 255);
+      normData[pIdx + 3] = 255;
+    }
+  }
+
+  // Commit image buffers to canvases
+  diffCtx.putImageData(diffImgData, 0, 0);
+  normCtx.putImageData(normImgData, 0, 0);
+  roughCtx.putImageData(roughImgData, 0, 0);
+  aoCtx.putImageData(aoImgData, 0, 0);
+
+  // Subtle clean engineering technical stencil stamp on diffuse canvas
+  diffCtx.save();
+  diffCtx.font = '600 13px "Courier New", monospace';
+  diffCtx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+  diffCtx.fillText('PIR-R28 // FM-APPROVED 75MM COMPOSITE ENVELOPE', 48, 68);
+  diffCtx.font = '500 11px "Courier New", monospace';
+  diffCtx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+  diffCtx.fillText('ZERO-CURING RAPID-DEPLOYMENT SPEC 24M²', 48, 86);
+  diffCtx.restore();
+
+  // Create Three.js Canvas Textures
+  const diffuseMap = new THREE.CanvasTexture(diffuseCanvas);
+  diffuseMap.wrapS = THREE.RepeatWrapping;
+  diffuseMap.wrapT = THREE.RepeatWrapping;
+  diffuseMap.generateMipmaps = true;
+  diffuseMap.anisotropy = 8;
+
+  const normalMap = new THREE.CanvasTexture(normalCanvas);
+  normalMap.wrapS = THREE.RepeatWrapping;
+  normalMap.wrapT = THREE.RepeatWrapping;
+  normalMap.generateMipmaps = true;
+  normalMap.anisotropy = 8;
+
+  const roughnessMap = new THREE.CanvasTexture(roughCanvas);
+  roughnessMap.wrapS = THREE.RepeatWrapping;
+  roughnessMap.wrapT = THREE.RepeatWrapping;
+  roughnessMap.generateMipmaps = true;
+  roughnessMap.anisotropy = 8;
+
+  const aoMap = new THREE.CanvasTexture(aoCanvas);
+  aoMap.wrapS = THREE.RepeatWrapping;
+  aoMap.wrapT = THREE.RepeatWrapping;
+  aoMap.generateMipmaps = true;
+  aoMap.anisotropy = 8;
+
+  const maps: WallPBRMaps = {
+    diffuseMap,
+    normalMap,
+    roughnessMap,
+    aoMap,
+  };
+
+  textureCache.set(cacheKey, maps);
+  return maps;
+}
+
+/**
+ * Universal Metric World-Space UV Mapping helper for architectural building envelope geometries.
+ * Calibrates UV coordinates so that 1.0 UV unit corresponds to exactly 1.0 real-world meter,
+ * guaranteeing seamless panel alignment, consistent rib spacing, and zero texture distortion.
+ */
+export function applyMetricUVMapping(
+  geometry: THREE.BufferGeometry,
+  subfloorTop: number = 0.23,
+  buildingLength: number = 6.0,
+  buildingWidth: number = 4.0,
+  worldOffsetX: number = 0,
+  worldOffsetY: number = 0,
+  worldOffsetZ: number = 0
+): THREE.BufferGeometry {
+  const posAttr = geometry.getAttribute('position');
+  if (!posAttr) return geometry;
+
+  geometry.computeVertexNormals();
+  const normAttr = geometry.getAttribute('normal');
+
+  const count = posAttr.count;
+  const uvs = new Float32Array(count * 2);
+
+  const halfL = buildingLength / 2;
+  const halfW = buildingWidth / 2;
+
+  for (let i = 0; i < count; i++) {
+    const px = posAttr.getX(i) + worldOffsetX;
+    const py = posAttr.getY(i) + worldOffsetY;
+    const pz = posAttr.getZ(i) + worldOffsetZ;
+
+    let nx = 0;
+    let ny = 0;
+    let nz = 1;
+    if (normAttr) {
+      nx = Math.abs(normAttr.getX(i));
+      ny = Math.abs(normAttr.getY(i));
+      nz = Math.abs(normAttr.getZ(i));
+    }
+
+    let u = 0;
+    let v = 0;
+
+    // Determine dominant projection plane based on vertex normal
+    if (nz >= nx && nz >= ny) {
+      // Facing South (+Z) or North (-Z)
+      u = px + halfL;
+      v = py - subfloorTop;
+    } else if (nx >= nz && nx >= ny) {
+      // Facing East (+X) or West (-X) (Gable walls)
+      u = pz + halfW;
+      v = py - subfloorTop;
+    } else {
+      // Facing Top (+Y) or Bottom (-Y)
+      u = px + halfL;
+      v = pz + halfW;
+    }
+
+    uvs[i * 2] = u;
+    uvs[i * 2 + 1] = v;
+  }
+
+  const uvAttr = new THREE.BufferAttribute(uvs, 2);
+  uvAttr.needsUpdate = true;
+  geometry.setAttribute('uv', uvAttr);
+  return geometry;
+}
+
+export function generateCorrugatedRoofTextures(_weathering?: any) {
   const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d')!;
-  return { canvas, ctx };
+  canvas.width = 64;
+  canvas.height = 64;
+  const tex = new THREE.CanvasTexture(canvas);
+  return { albedo: tex, normal: tex, roughness: tex, metalness: tex };
 }
 
-// Simple deterministic noise
-function pseudoNoise(x: number, y: number): number {
-  const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
-  return n - Math.floor(n);
+export function generateWallPanelTextures(_color?: any, _weathering?: any) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const tex = new THREE.CanvasTexture(canvas);
+  return { albedo: tex, normal: tex, roughness: tex, metalness: tex };
 }
 
-/**
- * Generate Corrugated Steel Roof PBR Textures
- */
-export function generateCorrugatedRoofTextures(weathering = 0.2) {
-  const size = 1024;
-  const periods = 24; // Number of corrugation waves along width
-
-  // 1. Albedo (Galvanized Steel with Zinc Spangles and subtle weathering)
-  const { canvas: albedoCanvas, ctx: albedoCtx } = createCanvas(size, size);
-  
-  // Base metal gradient
-  const baseGrad = albedoCtx.createLinearGradient(0, 0, size, 0);
-  for (let i = 0; i <= periods; i++) {
-    const t = i / periods;
-    baseGrad.addColorStop(Math.max(0, t - 0.02), '#9aa2aa');
-    baseGrad.addColorStop(t, '#cfd6dd');
-    baseGrad.addColorStop(Math.min(1, t + 0.02), '#858d95');
-  }
-  albedoCtx.fillStyle = baseGrad;
-  albedoCtx.fillRect(0, 0, size, size);
-
-  // Add Galvanized Zinc Spangles (crystals)
-  const imgData = albedoCtx.getImageData(0, 0, size, size);
-  const data = imgData.data;
-
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const idx = (y * size + x) * 4;
-      const wave = Math.sin((x / size) * Math.PI * 2 * periods);
-      
-      // Spangle pattern using Voronoi-like noise
-      const cellX = Math.floor(x / 16);
-      const cellY = Math.floor(y / 16);
-      const spangle = pseudoNoise(cellX * 3.1, cellY * 7.7) * 40 - 20;
-      const grain = (pseudoNoise(x, y) - 0.5) * 15;
-      
-      // Shadow in corrugated valleys
-      const valleyShadow = wave < -0.3 ? (wave + 0.3) * 35 : 0;
-      // Dirt accumulation in valleys based on weathering
-      const dirt = (wave < 0 ? Math.abs(wave) * weathering * 45 : 0) + (y / size) * weathering * 20;
-
-      let r = data[idx] + spangle + grain + valleyShadow - dirt * 0.8;
-      let g = data[idx + 1] + spangle + grain + valleyShadow - dirt * 0.9;
-      let b = data[idx + 2] + spangle + grain + valleyShadow - dirt * 1.0;
-
-      // Weathering rust spots
-      if (weathering > 0.3 && pseudoNoise(x * 0.1, y * 0.1) > 0.92) {
-        r += 30 * weathering;
-        g -= 20 * weathering;
-        b -= 30 * weathering;
-      }
-
-      data[idx] = Math.min(255, Math.max(0, r));
-      data[idx + 1] = Math.min(255, Math.max(0, g));
-      data[idx + 2] = Math.min(255, Math.max(0, b));
-    }
-  }
-  albedoCtx.putImageData(imgData, 0, 0);
-
-  // Add subtle fastener / screw lines across purlin spans
-  albedoCtx.fillStyle = '#444c53';
-  for (let py = 100; py < size; py += 300) {
-    for (let px = 0; px < periods; px++) {
-      const sx = (px + 0.5) * (size / periods);
-      albedoCtx.beginPath();
-      albedoCtx.arc(sx, py, 4, 0, Math.PI * 2);
-      albedoCtx.fill();
-      // Screw head highlight
-      albedoCtx.fillStyle = '#b0b8c0';
-      albedoCtx.beginPath();
-      albedoCtx.arc(sx - 1, py - 1, 2, 0, Math.PI * 2);
-      albedoCtx.fill();
-      albedoCtx.fillStyle = '#444c53';
-    }
-  }
-
-  // 2. Normal Map (Precise corrugation curvature + micro-bump)
-  const { canvas: normCanvas, ctx: normCtx } = createCanvas(size, size);
-  const normData = normCtx.createImageData(size, size);
-  const nData = normData.data;
-
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const idx = (y * size + x) * 4;
-      const angle = (x / size) * Math.PI * 2 * periods;
-      // Derivative of sin(angle) gives the slope in X
-      const slopeX = Math.cos(angle) * 1.2;
-      const slopeY = (pseudoNoise(x * 2, y * 2) - 0.5) * 0.1;
-
-      // Normal vector = normalize([-slopeX, -slopeY, 1])
-      const len = Math.sqrt(slopeX * slopeX + slopeY * slopeY + 1.0);
-      const nx = (-slopeX / len) * 0.5 + 0.5;
-      const ny = (-slopeY / len) * 0.5 + 0.5;
-      const nz = (1.0 / len) * 0.5 + 0.5;
-
-      nData[idx] = Math.floor(nx * 255);
-      nData[idx + 1] = Math.floor(ny * 255);
-      nData[idx + 2] = Math.floor(nz * 255);
-      nData[idx + 3] = 255;
-    }
-  }
-  normCtx.putImageData(normData, 0, 0);
-
-  // 3. Roughness Map
-  const { canvas: roughCanvas, ctx: roughCtx } = createCanvas(size, size);
-  const roughData = roughCtx.createImageData(size, size);
-  const rData = roughData.data;
-
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const idx = (y * size + x) * 4;
-      const wave = Math.sin((x / size) * Math.PI * 2 * periods);
-      // Tops of ridges are smoother (shinier/lower roughness: ~0.35), valleys are rougher (~0.65)
-      let r = 0.35 + (1 - (wave * 0.5 + 0.5)) * 0.3 + weathering * 0.25;
-      r += (pseudoNoise(x * 0.5, y * 0.5) - 0.5) * 0.1;
-      const val = Math.min(255, Math.max(0, Math.floor(r * 255)));
-
-      rData[idx] = val;
-      rData[idx + 1] = val;
-      rData[idx + 2] = val;
-      rData[idx + 3] = 255;
-    }
-  }
-  roughCtx.putImageData(roughData, 0, 0);
-
-  // 4. Metalness Map (Galvanized steel is high metallic ~0.92, dust reduces it)
-  const { canvas: metalCanvas, ctx: metalCtx } = createCanvas(size, size);
-  const metalData = metalCtx.createImageData(size, size);
-  const mData = metalData.data;
-
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const idx = (y * size + x) * 4;
-      let m = 0.95 - weathering * 0.3;
-      const val = Math.min(255, Math.max(0, Math.floor(m * 255)));
-      mData[idx] = val;
-      mData[idx + 1] = val;
-      mData[idx + 2] = val;
-      mData[idx + 3] = 255;
-    }
-  }
-  metalCtx.putImageData(metalData, 0, 0);
-
-  const albedoTexture = new THREE.CanvasTexture(albedoCanvas);
-  albedoTexture.wrapS = THREE.RepeatWrapping;
-  albedoTexture.wrapT = THREE.RepeatWrapping;
-
-  const normalTexture = new THREE.CanvasTexture(normCanvas);
-  normalTexture.wrapS = THREE.RepeatWrapping;
-  normalTexture.wrapT = THREE.RepeatWrapping;
-
-  const roughnessTexture = new THREE.CanvasTexture(roughCanvas);
-  roughnessTexture.wrapS = THREE.RepeatWrapping;
-  roughnessTexture.wrapT = THREE.RepeatWrapping;
-
-  const metalnessTexture = new THREE.CanvasTexture(metalCanvas);
-  metalnessTexture.wrapS = THREE.RepeatWrapping;
-  metalnessTexture.wrapT = THREE.RepeatWrapping;
-
-  return { albedo: albedoTexture, normal: normalTexture, roughness: roughnessTexture, metalness: metalnessTexture };
-}
-
-/**
- * Generate Modular Insulated Sandwich Wall Panel PBR Textures
- */
-export function generateWallPanelTextures(baseHex = '#c8c2b7', weathering = 0.15) {
-  const size = 1024;
-  const { canvas: albedoCanvas, ctx: albedoCtx } = createCanvas(size, size);
-
-  // Base neutral matte coat
-  albedoCtx.fillStyle = baseHex;
-  albedoCtx.fillRect(0, 0, size, size);
-
-  // Sub-panel division lines (Modular vertical sandwich cassettes every 256px)
-  const panelWidth = size / 4;
-
-  for (let p = 0; p < 4; p++) {
-    const px = p * panelWidth;
-
-    // Panel seam shadow
-    albedoCtx.fillStyle = 'rgba(0, 0, 0, 0.28)';
-    albedoCtx.fillRect(px, 0, 3, size);
-
-    // Panel seam bevel highlight
-    albedoCtx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-    albedoCtx.fillRect(px + 3, 0, 2, size);
-
-    // Weatherproof black gasket seal in the core gap
-    albedoCtx.fillStyle = '#222629';
-    albedoCtx.fillRect(px + 1, 0, 2, size);
-
-    // Stamped structural stiffener grooves (shallow horizontal rib lines)
-    for (let gy = 60; gy < size; gy += 120) {
-      albedoCtx.fillStyle = 'rgba(0, 0, 0, 0.12)';
-      albedoCtx.fillRect(px + 10, gy, panelWidth - 20, 2);
-      albedoCtx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-      albedoCtx.fillRect(px + 10, gy + 2, panelWidth - 20, 1);
-    }
-
-    // Rivet / fastener points along top and bottom structural battens
-    const rivetYs = [24, 48, size - 48, size - 24];
-    for (const ry of rivetYs) {
-      for (let rx = px + 24; rx < px + panelWidth - 10; rx += 48) {
-        // Rivet base
-        albedoCtx.fillStyle = '#3a3f44';
-        albedoCtx.beginPath();
-        albedoCtx.arc(rx, ry, 3.5, 0, Math.PI * 2);
-        albedoCtx.fill();
-        // Rivet highlight
-        albedoCtx.fillStyle = '#e8edf2';
-        albedoCtx.beginPath();
-        albedoCtx.arc(rx - 1, ry - 1, 1.5, 0, Math.PI * 2);
-        albedoCtx.fill();
-      }
-    }
-  }
-
-  // Micro-texture noise for powder-coated matte finish
-  const imgData = albedoCtx.getImageData(0, 0, size, size);
-  const data = imgData.data;
-
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const idx = (y * size + x) * 4;
-      const noise = (pseudoNoise(x, y) - 0.5) * 8;
-      // Ambient dirt gradient near the bottom base chassis
-      const baseDirt = Math.pow(y / size, 3) * weathering * 45;
-
-      data[idx] = Math.min(255, Math.max(0, data[idx] + noise - baseDirt * 0.9));
-      data[idx + 1] = Math.min(255, Math.max(0, data[idx + 1] + noise - baseDirt * 0.95));
-      data[idx + 2] = Math.min(255, Math.max(0, data[idx + 2] + noise - baseDirt));
-    }
-  }
-  albedoCtx.putImageData(imgData, 0, 0);
-
-  // Technical label / modular panel identifier stencil
-  albedoCtx.font = 'bold 12px "Courier New", monospace';
-  albedoCtx.fillStyle = 'rgba(40, 45, 50, 0.45)';
-  albedoCtx.fillText('MOD-SHELTER // ISO-PIR-80 // THERMAL CLASS A', 40, size - 70);
-  albedoCtx.fillText('EXPEDITED DEPLOYMENT UNIT #04', 40, size - 54);
-
-  // 2. Normal Map for Wall Panels (Bevels, seams, stiffeners, rivets)
-  const { canvas: normCanvas, ctx: normCtx } = createCanvas(size, size);
-  normCtx.fillStyle = '#8080ff'; // Flat normal
-  normCtx.fillRect(0, 0, size, size);
-
-  const nImgData = normCtx.getImageData(0, 0, size, size);
-  const nd = nImgData.data;
-
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const idx = (y * size + x) * 4;
-      const localX = x % panelWidth;
-      let nx = 0.5;
-      let ny = 0.5;
-
-      // Vertical seam bevels
-      if (localX < 3) {
-        nx = 0.25;
-      } else if (localX < 6) {
-        nx = 0.75;
-      }
-
-      // Micro orange peel noise
-      const micro = (pseudoNoise(x * 3, y * 3) - 0.5) * 0.08;
-      nx += micro;
-      ny += micro;
-
-      nd[idx] = Math.floor(Math.min(1, Math.max(0, nx)) * 255);
-      nd[idx + 1] = Math.floor(Math.min(1, Math.max(0, ny)) * 255);
-      nd[idx + 2] = 255;
-      nd[idx + 3] = 255;
-    }
-  }
-  normCtx.putImageData(nImgData, 0, 0);
-
-  // 3. Roughness Map (Matte ~0.8, glossy rivets and dark rubber seals ~0.95)
-  const { canvas: roughCanvas, ctx: roughCtx } = createCanvas(size, size);
-  roughCtx.fillStyle = '#c0c0c0'; // ~0.75 roughness
-  roughCtx.fillRect(0, 0, size, size);
-
-  // 4. Metallic Map (Powder coat is non-metallic ~0.05, exposed rivets ~0.9)
-  const { canvas: metalCanvas, ctx: metalCtx } = createCanvas(size, size);
-  metalCtx.fillStyle = '#101010'; // non-metal
-  metalCtx.fillRect(0, 0, size, size);
-
-  const albedoTexture = new THREE.CanvasTexture(albedoCanvas);
-  const normalTexture = new THREE.CanvasTexture(normCanvas);
-  const roughnessTexture = new THREE.CanvasTexture(roughCanvas);
-  const metalnessTexture = new THREE.CanvasTexture(metalCanvas);
-
-  return { albedo: albedoTexture, normal: normalTexture, roughness: roughnessTexture, metalness: metalnessTexture };
-}
-
-/**
- * Utilitarian Steel Door Texture (Industrial slam latch, hazard markings, kickplate)
- */
 export function generateDoorTexture() {
-  const size = 1024;
-  const { canvas, ctx } = createCanvas(size, size);
-
-  // Heavy steel door base
-  ctx.fillStyle = '#4a5259';
-  ctx.fillRect(0, 0, size, size);
-
-  // Perimeter steel frame bevel
-  ctx.lineWidth = 16;
-  ctx.strokeStyle = '#32373c';
-  ctx.strokeRect(8, 8, size - 16, size - 16);
-
-  // Inner perimeter rubber weather-seal
-  ctx.lineWidth = 6;
-  ctx.strokeStyle = '#181b1d';
-  ctx.strokeRect(20, 20, size - 40, size - 40);
-
-  // Lower diamond-plate steel kick plate
-  ctx.fillStyle = '#3a4046';
-  ctx.fillRect(24, size - 260, size - 48, 230);
-  ctx.strokeStyle = '#282c30';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(24, size - 260, size - 48, 230);
-
-  // Diamond plate tread pattern on kickplate
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-  for (let dy = size - 250; dy < size - 40; dy += 20) {
-    for (let dx = 40; dx < size - 40; dx += 24) {
-      ctx.beginPath();
-      ctx.ellipse(dx, dy, 6, 2, Math.PI / 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  // Emergency safety hazard stripe header
-  const stripeH = 40;
-  const stripeY = 32;
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(32, stripeY, size - 64, stripeH);
-  ctx.clip();
-  ctx.fillStyle = '#e5a50a'; // Hazard Yellow
-  ctx.fillRect(32, stripeY, size - 64, stripeH);
-
-  ctx.fillStyle = '#1e2124'; // Hazard Black
-  for (let sx = -50; sx < size + 50; sx += 36) {
-    ctx.beginPath();
-    ctx.moveTo(sx, stripeY);
-    ctx.lineTo(sx + 24, stripeY);
-    ctx.lineTo(sx + 24 - stripeH, stripeY + stripeH);
-    ctx.lineTo(sx - stripeH, stripeY + stripeH);
-    ctx.closePath();
-    ctx.fill();
-  }
-  ctx.restore();
-
-  // Utilitarian Door Plaque / Inspection Label
-  ctx.fillStyle = '#ded6c8';
-  ctx.fillRect(60, 100, 260, 140);
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = '#222';
-  ctx.strokeRect(60, 100, 260, 140);
-
-  ctx.fillStyle = '#111';
-  ctx.font = 'bold 16px sans-serif';
-  ctx.fillText('EMERGENCY SHELTER', 72, 130);
-  ctx.font = '12px "Courier New", monospace';
-  ctx.fillText('MAX CAPACITY: 4-6 PERS', 72, 155);
-  ctx.fillText('PRESSURE SEAL: ACTIVE', 72, 175);
-  ctx.fillText('RAPID EGRESS PUSH BAR', 72, 195);
-  ctx.fillStyle = '#c5221f';
-  ctx.fillRect(72, 205, 236, 20);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 11px sans-serif';
-  ctx.fillText('EMERGENCY EXIT ONLY', 115, 219);
-
-  // Heavy steel door handle / lock assembly box plate
-  ctx.fillStyle = '#22262a';
-  ctx.fillRect(size - 180, size * 0.45, 120, 180);
-  ctx.strokeStyle = '#111315';
-  ctx.lineWidth = 4;
-  ctx.strokeRect(size - 180, size * 0.45, 120, 180);
-
-  // Keyhole / Lever mount
-  ctx.fillStyle = '#8f9aa3';
-  ctx.beginPath();
-  ctx.arc(size - 120, size * 0.45 + 50, 18, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#222';
-  ctx.beginPath();
-  ctx.arc(size - 120, size * 0.45 + 50, 8, 0, Math.PI * 2);
-  ctx.fill();
-
-  const texture = new THREE.CanvasTexture(canvas);
-  return texture;
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  return new THREE.CanvasTexture(canvas);
 }
 
-/**
- * Reinforced Window Glass & Security Mesh Grid
- */
 export function generateReinforcedWindowTexture() {
-  const size = 512;
-  const { canvas, ctx } = createCanvas(size, size);
-
-  // Tinted impact-resistant double-pane glass background
-  const grad = ctx.createLinearGradient(0, 0, size, size);
-  grad.addColorStop(0, '#3a505e');
-  grad.addColorStop(0.5, '#283842');
-  grad.addColorStop(1, '#1b262d');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, size, size);
-
-  // Inner embedded high-tensile steel wire mesh (cross-hatch grid)
-  ctx.strokeStyle = 'rgba(220, 230, 240, 0.45)';
-  ctx.lineWidth = 2;
-
-  const step = 28;
-  for (let i = 0; i < size * 2; i += step) {
-    // 45 degree grid lines
-    ctx.beginPath();
-    ctx.moveTo(i - size, 0);
-    ctx.lineTo(i, size);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(i, 0);
-    ctx.lineTo(i - size, size);
-    ctx.stroke();
-  }
-
-  // Security perimeter frame gasket
-  ctx.lineWidth = 14;
-  ctx.strokeStyle = '#151719';
-  ctx.strokeRect(7, 7, size - 14, size - 14);
-
-  // Subtle glass reflection highlight
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(size * 0.7, 0);
-  ctx.lineTo(size * 0.3, size);
-  ctx.lineTo(0, size);
-  ctx.closePath();
-  ctx.fill();
-
-  const texture = new THREE.CanvasTexture(canvas);
-  return texture;
-}
-
-/**
- * Ground Base & Compacted Gravel / Deployment Pad Texture
- */
-export function generateGroundTexture() {
-  const size = 1024;
-  const { canvas, ctx } = createCanvas(size, size);
-
-  // Neutral terrain / concrete pad
-  ctx.fillStyle = '#6e7379';
-  ctx.fillRect(0, 0, size, size);
-
-  const imgData = ctx.getImageData(0, 0, size, size);
-  const d = imgData.data;
-
-  for (let i = 0; i < d.length; i += 4) {
-    const noise = (Math.random() - 0.5) * 35;
-    d[i] = Math.min(255, Math.max(0, d[i] + noise));
-    d[i + 1] = Math.min(255, Math.max(0, d[i + 1] + noise));
-    d[i + 2] = Math.min(255, Math.max(0, d[i + 2] + noise));
-  }
-  ctx.putImageData(imgData, 0, 0);
-
-  // Deployment markings / safety boundary lines
-  ctx.strokeStyle = 'rgba(220, 180, 40, 0.4)';
-  ctx.lineWidth = 8;
-  ctx.setLineDash([40, 20]);
-  ctx.strokeRect(120, 120, size - 240, size - 240);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(4, 4);
-  return texture;
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  return new THREE.CanvasTexture(canvas);
 }

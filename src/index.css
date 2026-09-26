@@ -1,65 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Rubik:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 @source "../index.html";
 @source "../src";
 
 @theme {
-  --font-sans: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-body-md: 'Inter', sans-serif;
-  --font-display-xl: 'Geist', sans-serif;
-  --font-label-sm: 'Inter', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-heading: 'Outfit', sans-serif;
   
-  --color-main: #0b0f19;
-  --color-card: #131b2e;
-  --color-card-hover: #19233c;
-  --color-border: #23314f;
-  
-  --color-surface-container-low: #111c2d;
-  --color-primary-fixed: #dae2fd;
-  --color-tertiary: #b7c8e1;
-  --color-surface: #081425;
-  --color-on-tertiary: #213145;
-  --color-inverse-on-surface: #263143;
-  --color-error-container: #93000a;
-  --color-surface-container-highest: #2a3548;
-  --color-tertiary-fixed: #d3e4fe;
-  --color-surface-variant: #2a3548;
-  --color-secondary-fixed-dim: #ffb690;
-  --color-inverse-primary: #565e74;
-  --color-secondary-fixed: #ffdbca;
-  --color-primary-fixed-dim: #bec6e0;
-  --color-outline-variant: #45464d;
-  --color-primary-container: #0f172a;
-  --color-on-primary-fixed-variant: #3f465c;
-  --color-error: #ffb4ab;
-  --color-surface-tint: #bec6e0;
-  --color-on-primary: #283044;
-  --color-secondary-container: #ec6a06;
-  --color-on-background: #d8e3fb;
-  --color-tertiary-container: #06182b;
-  --color-tertiary-fixed-dim: #b7c8e1;
-  --color-on-error-container: #ffdad6;
-  --color-on-surface-variant: #c6c6cd;
-  --color-on-primary-fixed: #131b2e;
-  --color-surface-dim: #081425;
-  --color-on-secondary-container: #4a1c00;
-  --color-on-secondary-fixed: #341100;
-  --color-primary: #bec6e0;
-  --color-background: #081425;
-  --color-on-secondary: #552100;
-  --color-secondary: #ffb690;
-  --color-outline: #909097;
-  --color-surface-bright: #2f3a4c;
-  --color-inverse-surface: #d8e3fb;
-  --color-surface-container-high: #1f2a3c;
-  --color-surface-container: #152031;
-  --color-on-tertiary-fixed: #0b1c30;
-  --color-on-secondary-fixed-variant: #783200;
-  --color-on-primary-container: #798098;
-  --color-on-error: #690005;
-  --color-surface-container-lowest: #040e1f;
-  --color-on-tertiary-fixed-variant: #38485d;
-  --color-on-surface: #d8e3fb;
-  --color-on-tertiary-container: #728299;
+  /* Energy and Action Palette */
+  --color-primary: #171717;
+  --color-on-primary: #FFFFFF;
+  --color-secondary: #262626;
+  --color-on-secondary: #FFFFFF;
+  --color-accent: #FF5722; /* Energetic Orange for Action */
+  --color-on-accent: #FFFFFF;
+  --color-background: #09090B;
+  --color-foreground: #FAFAFA;
+  --color-card: #18181B;
+  --color-card-foreground: #FAFAFA;
+  --color-muted: #27272A;
+  --color-muted-foreground: #A1A1AA;
+  --color-border: #3F3F46;
+  --color-ring: #FF5722;
 
   /* Custom Spacing */
   --spacing-gutter: 24px;
@@ -67,16 +29,6 @@
   --spacing-container-desktop: 40px;
   --spacing-unit: 8px;
   --spacing-section-gap: 64px;
-
-  /* Custom Fonts */
-  --font-display-lg: 'Inter', sans-serif;
-  --font-headline-lg: 'Inter', sans-serif;
-  --font-headline-md: 'Inter', sans-serif;
-  --font-headline-lg-mobile: 'Inter', sans-serif;
-  --font-body-lg: 'Inter', sans-serif;
-  --font-body-md: 'Inter', sans-serif;
-  --font-label-caps: 'JetBrains Mono', monospace;
-  --font-data-point: 'JetBrains Mono', monospace;
   
   /* Animations */
   --animate-fade-in-up: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -95,15 +47,15 @@
 }
 
 :root {
-  --bg-main: var(--color-main);
+  --bg-main: var(--color-background);
   --bg-card: var(--color-card);
   --border-color: var(--color-border);
 
   /* ThermoShelter Dynamic Theme Variables */
-  --theme-bg-main: #0B1221;
-  --theme-bg-sidebar: #121B2A;
-  --theme-bg-card: #1C2538;
-  --theme-bg-well: #070D19;
+  --theme-bg-main: #09090b;
+  --theme-bg-sidebar: #121214;
+  --theme-bg-card: #18181b;
+  --theme-bg-well: #0c0c0e;
   --theme-border-card: rgba(255, 255, 255, 0.05);
   --theme-border-well: transparent;
 
@@ -122,31 +74,24 @@
 }
 
 .theme-vibrant {
-  --theme-bg-main: transparent;
-  --theme-bg-sidebar: rgba(20, 10, 40, 0.4);
-  --theme-bg-card: rgba(255, 255, 255, 0.04);
-  --theme-bg-well: rgba(0, 0, 0, 0.3);
-  --theme-border-card: rgba(45, 212, 191, 0.3); /* Cyan accent border */
-  --theme-border-well: rgba(236, 160, 120, 0.3); /* Peach accent border */
+  --theme-bg-main: #09090b;
+  --theme-bg-sidebar: #121214;
+  --theme-bg-card: #18181b;
+  --theme-bg-well: #0c0c0e;
+  --theme-border-card: rgba(255, 255, 255, 0.08);
+  --theme-border-well: rgba(255, 255, 255, 0.04);
 }
 
-/* Vibrant Animated Background */
+/* Subtle Architectural Atmosphere */
 .theme-vibrant::before {
   content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
   background: 
-    radial-gradient(circle at 15% 50%, rgba(45, 212, 191, 0.25), transparent 50%),
-    radial-gradient(circle at 85% 30%, rgba(236, 160, 120, 0.25), transparent 50%),
-    radial-gradient(circle at 50% 100%, rgba(139, 92, 246, 0.3), transparent 60%);
-  background-color: #0b0514;
-  animation: pulse-glow 10s ease-in-out infinite alternate;
-}
-
-@keyframes pulse-glow {
-  0% { opacity: 0.8; }
-  100% { opacity: 1.2; }
+    radial-gradient(circle at 50% 0%, rgba(255, 87, 34, 0.04), transparent 50%),
+    radial-gradient(circle at 80% 100%, rgba(24, 24, 27, 0.8), transparent 60%);
+  background-color: #09090b;
 }
 
 * {
@@ -155,11 +100,18 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-main);
-  color: var(--text-main);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
   min-height: 100vh;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+.hero-heading {
+  background: linear-gradient(180deg, #646973 0%, #BBCCD7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* Custom UI Utilities from Stitch & Polishing */
@@ -254,3 +206,129 @@ body {
   scrollbar-width: none;
 }
 
+/* Organic Background System */
+.bg-noise {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  opacity: 0.15;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+.bg-earthy-glow {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  background-color: #080808;
+  background-image: 
+    radial-gradient(circle at 20% 150%, rgba(255, 87, 34, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% -20%, rgba(38, 38, 38, 0.8) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(23, 23, 23, 0.5) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* SaaS Theme Additions */
+@theme {
+  --font-nunito: 'Nunito', sans-serif;
+  --radius-4xl: 2rem;
+  --radius-5xl: 2.75rem;
+}
+
+.theme-saas {
+  font-family: var(--font-nunito);
+  background-color: #f7fbff;
+  color: #0f2030;
+  min-height: 100vh;
+}
+
+.theme-saas .text-ink-900 { color: #0f2030; }
+.theme-saas .text-ink-700 { color: #33485c; }
+.theme-saas .text-ink-500 { color: #5b7184; }
+
+.shadow-soft-sky {
+  box-shadow: 0 24px 60px -22px rgba(0, 0, 0, 0.35);
+}
+
+.shadow-card-dark {
+  box-shadow: 0 40px 90px -30px rgba(15,32,48,0.30);
+}
+
+.dotgrid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1.5px, transparent 1.5px);
+  background-size: 22px 22px;
+  background-position: center;
+}
+
+.ghost-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 0;
+  pointer-events: none;
+  animation: float-slow 8s ease-in-out infinite alternate;
+}
+
+@keyframes float-slow {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(15px, -20px) scale(1.05); }
+  100% { transform: translate(-10px, 10px) scale(0.95); }
+}
+
+/* ThermoShelter Signature Architectural Glass Cards & Micro-Interactions */
+.glass-card-premium {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 2rem;
+  box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.02), 0 8px 30px rgba(0, 0, 0, 0.4);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-premium:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+  border-top-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-3px);
+  box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.04), 0 16px 40px rgba(0, 0, 0, 0.55);
+}
+
+.glass-card-subtle {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 1.5rem;
+  box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.01), 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-subtle:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.03), 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.icon-badge-accent {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--color-accent);
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.glass-card-premium:hover .icon-badge-accent,
+.glass-card-subtle:hover .icon-badge-accent {
+  transform: scale(1.08);
+}
