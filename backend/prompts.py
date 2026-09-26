@@ -57,10 +57,11 @@ Extract the following information from the user's prompt into a strict JSON form
 - "occupancy": (integer) the number of people.
 - "budget": (integer) the budget in INR (assume 'lakhs' means 100,000).
 - "climate_concerns": (list of strings) any weather or climate related concerns mentioned.
+- "building_type": (string) "emergency" if emergency, temporary, rapid, or disaster relief shelter; "community" if community center, hall, or clinic; "residential" if permanent, family home, or apartment.
 
 Return ONLY a valid JSON object. Do NOT wrap it in markdown code blocks like ```json.
 Example output:
-{"location": "Leh", "occupancy": 5, "budget": 300000, "climate_concerns": ["extreme cold", "sudden heat wave"]}
+{"location": "Leh", "occupancy": 5, "budget": 300000, "climate_concerns": ["extreme cold", "sudden heat wave"], "building_type": "emergency"}
 """
 
 RATIONALE_SYSTEM_PROMPT = """
@@ -75,52 +76,52 @@ For the Wall and Roof materials:
 - List the cheapest supplier name and their live price in INR (e.g. ₹450.00).
 - List the Stock Status.
 - Include a Markdown hyperlink to the supplier URL so the user can click it.
+If it is an Emergency shelter, skip traditional foundation, plastering, or contingency materials as they are not needed for deployable kits, and their costs should reflect 0.
 
 Keep it highly professional, structured with markdown headers, and punchy.
 """
 
 # From blueprint_llm.py
-ARCHITECTURAL_ENRICHMENT_PROMPT = """You are a senior architect generating construction-level detail for a building.
+ARCHITECTURAL_ENRICHMENT_PROMPT = """You are a senior architect and computational geometer generating construction-level detail for a building.
 
-You will receive a VALIDATED building specification (JSON) from a physics engine.
-All structural numbers (dimensions, R-values, loads) are FINAL — do NOT change them.
+You will receive a VALIDATED building specification (JSON) from a physics engine. This includes EXACT mathematical coordinates for every room, wall, door, and window.
+All structural numbers (dimensions, R-values, loads, coordinates) are FINAL — do NOT change them.
 
 Your job is to ADD architectural detail that the physics engine doesn't generate:
-1. Furniture placement for each room
-2. Exterior features (porch, chimney, steps)
-3. Material/color hints based on regional architecture
-4. Room descriptions and design narrative
+1. Furniture placement for each room (must not block doors/windows and must fit perfectly within the mathematical bounds of the room).
+2. Exterior features (porch, chimney, steps).
+3. Material/color hints based on regional architecture.
+4. Room descriptions and design narrative.
+5. An exact architectural image prompt.
 
-## RULES
+## THERMOSHELTER PROJECT CONTEXT & RULES
+- We build physics-first, passive solar shelters for emergency, community, and affordable permanent use. Form follows function.
+- All positions use the same coordinate system as the input (origin = SW corner, x = east, y = north, units = meters).
+- **SPATIAL RULE 1**: Furniture items MUST FIT strictly inside the room dimensions given (x_m, y_m to x_m+width_m, y_m+length_m).
+- **SPATIAL RULE 2**: NEVER place a bed or large furniture piece overlapping a door or wall boundary. You must check the exact `doors` coordinates.
+- **SPATIAL RULE 3**: You must output a `spatial_reasoning` block at the top of your JSON explaining mathematically how you avoided blocking the doors.
 - Return ONLY valid JSON. No markdown, no explanation outside JSON.
 - NEVER change any numeric values from the input spec.
-- All positions use the same coordinate system as the input (origin = SW corner, x = east, y = north, units = meters).
-- Furniture items must FIT inside the room dimensions given.
-- Exterior features must respect the building footprint.
 
 ## PHYSICS EXPLANATION REQUIREMENTS
 When writing your `room_descriptions` and overall `narrative`, you MUST explain how the design leverages the following natural physics concepts (where applicable):
-- **Solar Radiation & Rejection:** Mention how roof overhangs or Radiant Barrier Foil blocks summer sun/heat waves, while low winter sun penetrates deeply.
-- **Latent Heat Storage:** If Phase Change Materials (PCMs) are used, explain how they absorb thermal energy during the day to prevent the "European heat wave oven effect".
-- **Military / Emergency Deployment:** If Military SIPs or Aerogel is used, explain how they provide extreme R-Values for survival while being lightweight enough for rapid airdrops.
-- **Natural Ventilation & Stack Effect (Chimney Effect):** Describe how cool air enters low and escapes through high openings via natural convection.
-- **Thermal Buffers:** Explain how utility/service rooms on the North side insulate the primary living spaces from extreme cold.
-
-## TYPOLOGIES & VISUAL TRANSLATION
-You will receive a `shelter_tier_directive` in the JSON. Your narrative AND your `image_generation_prompt` MUST reflect this exactly:
-1. **Emergency Shelter**: Visually translates to military-grade ruggedness, temporary structures, disaster relief tents, modular panels (SIPs), or high-tech Aerogel fabrics. It MUST look strictly utilitarian, cheap, and rugged. Absolutely NO luxury features, no large glass walls, no manicured lawns, no expensive timber. 
-2. **Community Shelter**: Visually translates to massive, column-free spaces. If it is low budget, it MUST look like a simple, large utilitarian hall (e.g. basic corrugated steel structure or large fabric tent). NO luxury finishes. If PTFE Membrane is used, describe it as a "large tensioned fabric shade canopy resembling a white circus tent."
-3. **Permanent Shelter**: Visually translates to heavy, thick-walled architecture (Rammed Earth, Stone). If the budget is low, it MUST look like a simple, traditional rural home or basic cinder block structure. Absolutely NO luxury features or manicured landscaping. If the budget is high (Luxury), ONLY then can it have modern deep roof overhangs and large south-facing aesthetic glass.
+- **Solar Radiation & Rejection**: Overhangs, foil.
+- **Latent Heat Storage**: Phase Change Materials (PCMs) absorbing thermal energy.
+- **Natural Ventilation**: Stack effect.
+- **Thermal Buffers**: Utility rooms placed on the North side.
 
 ## IMAGE GENERATION SYNTHESIZER
-You must synthesize the physics data into an extremely descriptive `image_generation_prompt` intended for an AI Image Generator.
-- Use this aesthetic constraint: "Highly detailed technical architectural blueprint, precise CAD schematic style, visible text labels and material callouts, exact dimension lines."
-- **CRITICAL BUDGET GUARDRAIL:** If the `shelter_tier_directive` indicates a low budget, cost-effective, or emergency shelter, explicitly add: "NO luxury, NO expensive glass walls, strictly utilitarian, basic materials, cheap construction, realistic environment, no manicured lawns."
-- Explicitly mention the visible physics and materials to be labeled: "Include text labels pointing to specific wall textures (e.g., rammed earth layers, corrugated steel, insulated fabric), window sizes, and insulation layers."
+You must synthesize the physics data into TWO extremely descriptive image generation prompts: one for a 2D floor plan and one for a 3D floor plan image.
+- **2D Floor Plan (floor_plan_2d_prompt)**: "Production-level 2D architectural floor plan, professional CAD drawing, top-down orthographic, stark contrasting linework on grid, precise wall thicknesses, top-down spatial accuracy. Highly detailed diagrammatic style, structural clarity, zero photorealism."
+- **3D Floor Plan (floor_plan_3d_prompt)**: "Beautiful, highly detailed 3D architectural rendering of a floor plan, isometric or angled top-down perspective, cutaway showing interior layout and furniture. Photorealistic lighting, elegant textures, realistic materials."
+- Include the surrounding environment (e.g., dense jungle, snowy mountain) as a stylized minimal backdrop or contour lines to the schematic.
+- **CRITICAL BUDGET GUARDRAIL:** If the `shelter_tier_directive` indicates a low budget or emergency shelter, explicitly add: "Basic affordable housing layout, utilitarian relief shelter structure, NO luxury features, NO massive glass walls."
+- Explicitly mention the visible physics and materials to be featured in the cutaway diagram.
 
 ## OUTPUT SCHEMA (return exactly this structure):
 
 {
+  "spatial_reasoning": "The bedroom is located at X=0, Y=3. The door is at X=1.5, Y=3 (South wall of bedroom). I will place the bed at X=0.2, Y=4.0 to leave a clear 1.3m path to the door. ...",
   "furniture": [
     {
       "room_id": "living_room",
@@ -128,30 +129,8 @@ You must synthesize the physics data into an extremely descriptive `image_genera
         {"type": "sofa", "x": 1.0, "y": 0.5, "width_m": 2.0, "depth_m": 0.8, "height_m": 0.85, "rotation_deg": 0},
         {"type": "coffee_table", "x": 1.5, "y": 1.5, "width_m": 1.0, "depth_m": 0.6, "height_m": 0.45, "rotation_deg": 0}
       ]
-    },
-    {
-      "room_id": "bedroom_1",
-      "items": [
-        {"type": "bed_double", "x": 0.3, "y": 0.8, "width_m": 1.6, "depth_m": 2.0, "height_m": 0.5, "rotation_deg": 0},
-        {"type": "wardrobe", "x": 0.1, "y": 0.1, "width_m": 1.2, "depth_m": 0.6, "height_m": 2.0, "rotation_deg": 0}
-      ]
-    },
-    {
-      "room_id": "kitchen",
-      "items": [
-        {"type": "counter", "x": 0.0, "y": 0.1, "width_m": 2.5, "depth_m": 0.6, "height_m": 0.9, "rotation_deg": 0},
-        {"type": "stove", "x": 1.0, "y": 0.1, "width_m": 0.6, "depth_m": 0.6, "height_m": 0.9, "rotation_deg": 0}
-      ]
-    },
-    {
-      "room_id": "bathroom_1",
-      "items": [
-        {"type": "toilet", "x": 0.3, "y": 0.3, "width_m": 0.4, "depth_m": 0.7, "height_m": 0.4, "rotation_deg": 0},
-        {"type": "shower_tray", "x": 1.0, "y": 0.0, "width_m": 0.9, "depth_m": 0.9, "height_m": 0.05, "rotation_deg": 0}
-      ]
     }
   ],
-
   "exterior_features": {
     "porch": {
       "enabled": true,
@@ -173,7 +152,6 @@ You must synthesize the physics data into an extremely descriptive `image_genera
       "extends_above_ridge_m": 0.8
     }
   },
-
   "material_hints": {
     "exterior_wall_texture": "stone_rubble",
     "exterior_wall_color": "#9C8B7A",
@@ -186,17 +164,12 @@ You must synthesize the physics data into an extremely descriptive `image_genera
     "door_color": "#5C3D2E",
     "regional_style": "Ladakhi vernacular — thick stone walls, flat/low-slope roof, timber window frames, whitewashed interior"
   },
-
   "room_descriptions": {
-    "living_room": "South-facing main living area positioned to capture maximum passive solar gain through large glazing.",
-    "bedroom_1": "North-facing private sleeping room with minimal glazing to reduce overnight heat loss.",
-    "kitchen": "East-facing kitchen benefits from morning sunlight; cooking activity provides supplementary internal heat gain.",
-    "bathroom_1": "Compact service space acts as thermal buffer between heated and unheated zones."
+    "living_room": "South-facing main living area positioned to capture maximum passive solar gain through large glazing."
   },
-
   "narrative": "This shelter is designed around passive solar principles... (3-5 sentences)",
-
-  "image_generation_prompt": "Highly detailed technical architectural blueprint and CAD schematic of a permanent passive solar shelter in a snowy mountain landscape. The drawing features visible text labels pointing to thick rammed earth walls, material callouts for double-glazed windows, and exact dimension lines for a deep timber roof overhang. Crisp lines, technical drawing aesthetic, precise engineering style."
+  "floor_plan_2d_prompt": "Production-level 2D architectural floor plan, professional CAD drawing, top-down orthographic, stark contrasting linework on grid, precise wall thicknesses showing rammed earth construction, top-down spatial accuracy. Highly detailed diagrammatic style, structural clarity, zero photorealism.",
+  "floor_plan_3d_prompt": "Beautiful, highly detailed 3D architectural rendering of a floor plan, isometric perspective cutaway showing interior layout and furniture. Photorealistic lighting, elegant textures, realistic materials, integrating seamlessly with the target climate environment."
 }
 
 IMPORTANT: Adapt furniture, colors, and exterior features to the CLIMATE and REGION:

@@ -1,0 +1,1182 @@
+﻿{
+    "status":  "success",
+    "blueprint":  {
+                      "meta":  {
+                                   "location":  "Leh",
+                                   "lat":  34.1526,
+                                   "lon":  77.5771,
+                                   "occupancy":  5,
+                                   "building_type":  "residential",
+                                   "llm_source":  "gemini/gemini-3.6-flash",
+                                   "rate_limit_hit":  false
+                               },
+                      "building":  {
+                                       "length_m":  10.4,
+                                       "width_m":  6.5,
+                                       "ceiling_height_m":  2.7,
+                                       "ridge_height_m":  0.573,
+                                       "total_height_m":  3.27,
+                                       "shape":  "elongated_rectangle",
+                                       "orientation":  {
+                                                           "primary_facade":  "south",
+                                                           "azimuth_deg":  180,
+                                                           "long_axis":  "east_west",
+                                                           "reason":  "Long axis E-W to maximize south-facing wall. Azimuth 180 deg (true south)."
+                                                       },
+                                       "solar_geometry":  {
+                                                              "winter_solar_altitude_deg":  32.3,
+                                                              "summer_solar_altitude_deg":  79.3,
+                                                              "recommended_overhang_mm":  1153,
+                                                              "overhang_reason":  "Blocks summer sun at 79deg altitude, admits winter sun at 32deg altitude."
+                                                          },
+                                       "floor_area_m2":  67.6
+                                   },
+                      "rooms":  [
+                                    {
+                                        "id":  "foyer",
+                                        "name":  "Foyer",
+                                        "x":  0,
+                                        "y":  0,
+                                        "width_m":  2.0,
+                                        "length_m":  2.65,
+                                        "color_hex":  "#8b5cf6",
+                                        "function":  "other",
+                                        "area_m2":  5.3,
+                                        "orientation":  "west",
+                                        "thermal_zone":  "service",
+                                        "description":  "Unheated airlock entryway acting as a thermal buffer to prevent heat loss from mountain winds when entering."
+                                    },
+                                    {
+                                        "id":  "living_dining",
+                                        "name":  "Living \u0026 Dining",
+                                        "x":  2000,
+                                        "y":  0,
+                                        "width_m":  8.4,
+                                        "length_m":  2.65,
+                                        "color_hex":  "#f59e0b",
+                                        "function":  "living",
+                                        "area_m2":  22.26,
+                                        "orientation":  "south",
+                                        "thermal_zone":  "heated_primary",
+                                        "description":  "Primary south-facing communal room engineered to maximize passive solar heat gain through large glazing, featuring high thermal mass stone flooring."
+                                    },
+                                    {
+                                        "id":  "kitchen",
+                                        "name":  "Kitchen",
+                                        "x":  8324.528301886792,
+                                        "y":  3850,
+                                        "width_m":  2.0754716981132075,
+                                        "length_m":  2.65,
+                                        "color_hex":  "#10b981",
+                                        "function":  "kitchen",
+                                        "area_m2":  5.5,
+                                        "orientation":  "east",
+                                        "thermal_zone":  "heated_secondary",
+                                        "description":  "Compact kitchen positioned on the northeast corner equipped with dedicated exhaust chimney to manage moisture and indoor air quality."
+                                    },
+                                    {
+                                        "id":  "bathroom_1",
+                                        "name":  "Bathroom 1",
+                                        "x":  7124.528301886792,
+                                        "y":  3850,
+                                        "width_m":  1.2,
+                                        "length_m":  2.65,
+                                        "color_hex":  "#64748b",
+                                        "function":  "bathroom",
+                                        "area_m2":  3.18,
+                                        "orientation":  "west",
+                                        "thermal_zone":  "service",
+                                        "description":  "Utilitarian wet area positioned along the north side to serve as a secondary thermal buffer zone against cold northern winds."
+                                    },
+                                    {
+                                        "id":  "bathroom_2",
+                                        "name":  "Bathroom 2",
+                                        "x":  5924.528301886792,
+                                        "y":  3850,
+                                        "width_m":  1.2,
+                                        "length_m":  2.65,
+                                        "color_hex":  "#64748b",
+                                        "function":  "bathroom",
+                                        "area_m2":  3.18,
+                                        "orientation":  "west",
+                                        "thermal_zone":  "service",
+                                        "description":  "Efficient interior bathroom grouped near plumbing stacks along the northern buffer boundary."
+                                    },
+                                    {
+                                        "id":  "bedroom_1",
+                                        "name":  "Bedroom 1",
+                                        "x":  3949.6855345911945,
+                                        "y":  3850,
+                                        "width_m":  1.9748427672955975,
+                                        "length_m":  2.65,
+                                        "color_hex":  "#3b82f6",
+                                        "function":  "bedroom",
+                                        "area_m2":  5.23,
+                                        "orientation":  "north",
+                                        "thermal_zone":  "heated_primary",
+                                        "description":  "North-facing compact bedroom insulated by high-performance EPS panels to maintain stable indoor temperatures."
+                                    },
+                                    {
+                                        "id":  "bedroom_2",
+                                        "name":  "Bedroom 2",
+                                        "x":  1974.842767295597,
+                                        "y":  3850,
+                                        "width_m":  1.9748427672955975,
+                                        "length_m":  2.65,
+                                        "color_hex":  "#3b82f6",
+                                        "function":  "bedroom",
+                                        "area_m2":  5.23,
+                                        "orientation":  "north",
+                                        "thermal_zone":  "heated_primary",
+                                        "description":  "Central bedroom shielded from wind by adjacent interior rooms and buffered by the central hallway."
+                                    },
+                                    {
+                                        "id":  "bedroom_3",
+                                        "name":  "Bedroom 3",
+                                        "x":  -4.5474735088646412E-13,
+                                        "y":  3850,
+                                        "width_m":  1.9748427672955975,
+                                        "length_m":  2.65,
+                                        "color_hex":  "#3b82f6",
+                                        "function":  "bedroom",
+                                        "area_m2":  5.23,
+                                        "orientation":  "north",
+                                        "thermal_zone":  "heated_primary",
+                                        "description":  "Northwest bedroom designed with minimal external exposure and tight thermal envelope for heat retention."
+                                    }
+                                ],
+                      "geometry":  {
+                                       "rooms":  [
+                                                     {
+                                                         "id":  "foyer",
+                                                         "name":  "Foyer",
+                                                         "x":  0,
+                                                         "y":  0,
+                                                         "width_m":  2.0,
+                                                         "length_m":  2.65,
+                                                         "color_hex":  "#14b8a6"
+                                                     },
+                                                     {
+                                                         "id":  "living_dining",
+                                                         "name":  "Living \u0026 Dining",
+                                                         "x":  2000,
+                                                         "y":  0,
+                                                         "width_m":  8.4,
+                                                         "length_m":  2.65,
+                                                         "color_hex":  "#ef4444"
+                                                     },
+                                                     {
+                                                         "id":  "kitchen",
+                                                         "name":  "Kitchen",
+                                                         "x":  8324.528301886792,
+                                                         "y":  3850,
+                                                         "width_m":  2.0754716981132075,
+                                                         "length_m":  2.65,
+                                                         "color_hex":  "#3b82f6"
+                                                     },
+                                                     {
+                                                         "id":  "bathroom_1",
+                                                         "name":  "Bathroom 1",
+                                                         "x":  7124.528301886792,
+                                                         "y":  3850,
+                                                         "width_m":  1.2,
+                                                         "length_m":  2.65,
+                                                         "color_hex":  "#10b981"
+                                                     },
+                                                     {
+                                                         "id":  "bathroom_2",
+                                                         "name":  "Bathroom 2",
+                                                         "x":  5924.528301886792,
+                                                         "y":  3850,
+                                                         "width_m":  1.2,
+                                                         "length_m":  2.65,
+                                                         "color_hex":  "#10b981"
+                                                     },
+                                                     {
+                                                         "id":  "bedroom_1",
+                                                         "name":  "Bedroom 1",
+                                                         "x":  3949.6855345911945,
+                                                         "y":  3850,
+                                                         "width_m":  1.9748427672955975,
+                                                         "length_m":  2.65,
+                                                         "color_hex":  "#f59e0b"
+                                                     },
+                                                     {
+                                                         "id":  "bedroom_2",
+                                                         "name":  "Bedroom 2",
+                                                         "x":  1974.842767295597,
+                                                         "y":  3850,
+                                                         "width_m":  1.9748427672955975,
+                                                         "length_m":  2.65,
+                                                         "color_hex":  "#f59e0b"
+                                                     },
+                                                     {
+                                                         "id":  "bedroom_3",
+                                                         "name":  "Bedroom 3",
+                                                         "x":  -4.5474735088646412E-13,
+                                                         "y":  3850,
+                                                         "width_m":  1.9748427672955975,
+                                                         "length_m":  2.65,
+                                                         "color_hex":  "#f59e0b"
+                                                     }
+                                                 ],
+                                       "walls":  [
+                                                     {
+                                                         "id":  "ext_north",
+                                                         "start":  [
+                                                                       0,
+                                                                       6500
+                                                                   ],
+                                                         "end":  [
+                                                                     10400,
+                                                                     6500
+                                                                 ],
+                                                         "thickness":  300,
+                                                         "is_exterior":  true
+                                                     },
+                                                     {
+                                                         "id":  "ext_south",
+                                                         "start":  [
+                                                                       0,
+                                                                       0
+                                                                   ],
+                                                         "end":  [
+                                                                     10400,
+                                                                     0
+                                                                 ],
+                                                         "thickness":  300,
+                                                         "is_exterior":  true
+                                                     },
+                                                     {
+                                                         "id":  "ext_west",
+                                                         "start":  [
+                                                                       0,
+                                                                       0
+                                                                   ],
+                                                         "end":  [
+                                                                     0,
+                                                                     6500
+                                                                 ],
+                                                         "thickness":  300,
+                                                         "is_exterior":  true
+                                                     },
+                                                     {
+                                                         "id":  "ext_east",
+                                                         "start":  [
+                                                                       10400,
+                                                                       0
+                                                                   ],
+                                                         "end":  [
+                                                                     10400,
+                                                                     6500
+                                                                 ],
+                                                         "thickness":  300,
+                                                         "is_exterior":  true
+                                                     },
+                                                     {
+                                                         "id":  "int_foyer_living",
+                                                         "start":  [
+                                                                       2000,
+                                                                       0
+                                                                   ],
+                                                         "end":  [
+                                                                     2000,
+                                                                     2650
+                                                                 ],
+                                                         "thickness":  100,
+                                                         "is_exterior":  false
+                                                     },
+                                                     {
+                                                         "id":  "int_corridor_north",
+                                                         "start":  [
+                                                                       0,
+                                                                       3850
+                                                                   ],
+                                                         "end":  [
+                                                                     10400,
+                                                                     3850
+                                                                 ],
+                                                         "thickness":  100,
+                                                         "is_exterior":  false
+                                                     },
+                                                     {
+                                                         "id":  "int_corridor_south",
+                                                         "start":  [
+                                                                       0,
+                                                                       2650
+                                                                   ],
+                                                         "end":  [
+                                                                     10400,
+                                                                     2650
+                                                                 ],
+                                                         "thickness":  100,
+                                                         "is_exterior":  false
+                                                     },
+                                                     {
+                                                         "id":  "int_vert_kitchen",
+                                                         "start":  [
+                                                                       8324.528301886792,
+                                                                       3850
+                                                                   ],
+                                                         "end":  [
+                                                                     8324.528301886792,
+                                                                     6500
+                                                                 ],
+                                                         "thickness":  100,
+                                                         "is_exterior":  false
+                                                     },
+                                                     {
+                                                         "id":  "int_vert_bathroom_1",
+                                                         "start":  [
+                                                                       7124.528301886792,
+                                                                       3850
+                                                                   ],
+                                                         "end":  [
+                                                                     7124.528301886792,
+                                                                     6500
+                                                                 ],
+                                                         "thickness":  100,
+                                                         "is_exterior":  false
+                                                     },
+                                                     {
+                                                         "id":  "int_vert_bathroom_2",
+                                                         "start":  [
+                                                                       5924.528301886792,
+                                                                       3850
+                                                                   ],
+                                                         "end":  [
+                                                                     5924.528301886792,
+                                                                     6500
+                                                                 ],
+                                                         "thickness":  100,
+                                                         "is_exterior":  false
+                                                     },
+                                                     {
+                                                         "id":  "int_vert_bedroom_1",
+                                                         "start":  [
+                                                                       3949.6855345911945,
+                                                                       3850
+                                                                   ],
+                                                         "end":  [
+                                                                     3949.6855345911945,
+                                                                     6500
+                                                                 ],
+                                                         "thickness":  100,
+                                                         "is_exterior":  false
+                                                     },
+                                                     {
+                                                         "id":  "int_vert_bedroom_2",
+                                                         "start":  [
+                                                                       1974.842767295597,
+                                                                       3850
+                                                                   ],
+                                                         "end":  [
+                                                                     1974.842767295597,
+                                                                     6500
+                                                                 ],
+                                                         "thickness":  100,
+                                                         "is_exterior":  false
+                                                     }
+                                                 ],
+                                       "doors":  [
+                                                     {
+                                                         "wall_id":  "int_foyer_living",
+                                                         "pos":  [
+                                                                     2000,
+                                                                     1325.0
+                                                                 ],
+                                                         "width":  1200,
+                                                         "height":  2100,
+                                                         "rot":  90
+                                                     },
+                                                     {
+                                                         "wall_id":  "int_corridor_south",
+                                                         "pos":  [
+                                                                     5200.0,
+                                                                     2650
+                                                                 ],
+                                                         "width":  2000,
+                                                         "height":  2100,
+                                                         "rot":  0
+                                                     },
+                                                     {
+                                                         "wall_id":  "ext_south",
+                                                         "pos":  [
+                                                                     1000,
+                                                                     0
+                                                                 ],
+                                                         "width":  1000,
+                                                         "height":  2100,
+                                                         "rot":  0
+                                                     },
+                                                     {
+                                                         "wall_id":  "int_corridor_north",
+                                                         "pos":  [
+                                                                     9362.264150943396,
+                                                                     3850
+                                                                 ],
+                                                         "width":  800,
+                                                         "height":  2100,
+                                                         "rot":  0
+                                                     },
+                                                     {
+                                                         "wall_id":  "int_corridor_north",
+                                                         "pos":  [
+                                                                     7724.528301886792,
+                                                                     3850
+                                                                 ],
+                                                         "width":  800,
+                                                         "height":  2100,
+                                                         "rot":  0
+                                                     },
+                                                     {
+                                                         "wall_id":  "int_corridor_north",
+                                                         "pos":  [
+                                                                     6524.528301886792,
+                                                                     3850
+                                                                 ],
+                                                         "width":  800,
+                                                         "height":  2100,
+                                                         "rot":  0
+                                                     },
+                                                     {
+                                                         "wall_id":  "int_corridor_north",
+                                                         "pos":  [
+                                                                     4937.106918238993,
+                                                                     3850
+                                                                 ],
+                                                         "width":  800,
+                                                         "height":  2100,
+                                                         "rot":  0
+                                                     },
+                                                     {
+                                                         "wall_id":  "int_corridor_north",
+                                                         "pos":  [
+                                                                     2962.2641509433956,
+                                                                     3850
+                                                                 ],
+                                                         "width":  800,
+                                                         "height":  2100,
+                                                         "rot":  0
+                                                     },
+                                                     {
+                                                         "wall_id":  "int_corridor_north",
+                                                         "pos":  [
+                                                                     987.4213836477983,
+                                                                     3850
+                                                                 ],
+                                                         "width":  800,
+                                                         "height":  2100,
+                                                         "rot":  0
+                                                     }
+                                                 ],
+                                       "windows":  [
+                                                       {
+                                                           "wall_id":  "ext_north",
+                                                           "pos":  [
+                                                                       9362.264150943396,
+                                                                       6500
+                                                                   ],
+                                                           "width":  1000,
+                                                           "height":  1200,
+                                                           "sill_height":  900
+                                                       },
+                                                       {
+                                                           "wall_id":  "ext_north",
+                                                           "pos":  [
+                                                                       7724.528301886792,
+                                                                       6500
+                                                                   ],
+                                                           "width":  600,
+                                                           "height":  1200,
+                                                           "sill_height":  900
+                                                       },
+                                                       {
+                                                           "wall_id":  "ext_north",
+                                                           "pos":  [
+                                                                       6524.528301886792,
+                                                                       6500
+                                                                   ],
+                                                           "width":  600,
+                                                           "height":  1200,
+                                                           "sill_height":  900
+                                                       },
+                                                       {
+                                                           "wall_id":  "ext_north",
+                                                           "pos":  [
+                                                                       4937.106918238993,
+                                                                       6500
+                                                                   ],
+                                                           "width":  1000,
+                                                           "height":  1200,
+                                                           "sill_height":  900
+                                                       },
+                                                       {
+                                                           "wall_id":  "ext_north",
+                                                           "pos":  [
+                                                                       2962.2641509433956,
+                                                                       6500
+                                                                   ],
+                                                           "width":  1000,
+                                                           "height":  1200,
+                                                           "sill_height":  900
+                                                       },
+                                                       {
+                                                           "wall_id":  "ext_north",
+                                                           "pos":  [
+                                                                       987.4213836477983,
+                                                                       6500
+                                                                   ],
+                                                           "width":  1000,
+                                                           "height":  1200,
+                                                           "sill_height":  900
+                                                       },
+                                                       {
+                                                           "wall_id":  "ext_south",
+                                                           "pos":  [
+                                                                       6200.0,
+                                                                       0
+                                                                   ],
+                                                           "width":  2000,
+                                                           "height":  1500,
+                                                           "sill_height":  600
+                                                       },
+                                                       {
+                                                           "wall_id":  "ext_west",
+                                                           "pos":  [
+                                                                       0,
+                                                                       5175.0
+                                                                   ],
+                                                           "width":  1000,
+                                                           "height":  1500,
+                                                           "sill_height":  900
+                                                       },
+                                                       {
+                                                           "wall_id":  "ext_east",
+                                                           "pos":  [
+                                                                       10400,
+                                                                       5175.0
+                                                                   ],
+                                                           "width":  1000,
+                                                           "height":  1500,
+                                                           "sill_height":  900
+                                                       }
+                                                   ]
+                                   },
+                      "interior_walls":  [
+                                             {
+                                                 "id":  "int_foyer_living",
+                                                 "start_x_m":  2.0,
+                                                 "start_y_m":  0.0,
+                                                 "end_x_m":  2.0,
+                                                 "end_y_m":  2.65,
+                                                 "thickness_m":  0.1
+                                             },
+                                             {
+                                                 "id":  "int_corridor_north",
+                                                 "start_x_m":  0.0,
+                                                 "start_y_m":  3.85,
+                                                 "end_x_m":  10.4,
+                                                 "end_y_m":  3.85,
+                                                 "thickness_m":  0.1
+                                             },
+                                             {
+                                                 "id":  "int_corridor_south",
+                                                 "start_x_m":  0.0,
+                                                 "start_y_m":  2.65,
+                                                 "end_x_m":  10.4,
+                                                 "end_y_m":  2.65,
+                                                 "thickness_m":  0.1
+                                             },
+                                             {
+                                                 "id":  "int_vert_kitchen",
+                                                 "start_x_m":  8.324528301886792,
+                                                 "start_y_m":  3.85,
+                                                 "end_x_m":  8.324528301886792,
+                                                 "end_y_m":  6.5,
+                                                 "thickness_m":  0.1
+                                             },
+                                             {
+                                                 "id":  "int_vert_bathroom_1",
+                                                 "start_x_m":  7.124528301886792,
+                                                 "start_y_m":  3.85,
+                                                 "end_x_m":  7.124528301886792,
+                                                 "end_y_m":  6.5,
+                                                 "thickness_m":  0.1
+                                             },
+                                             {
+                                                 "id":  "int_vert_bathroom_2",
+                                                 "start_x_m":  5.9245283018867925,
+                                                 "start_y_m":  3.85,
+                                                 "end_x_m":  5.9245283018867925,
+                                                 "end_y_m":  6.5,
+                                                 "thickness_m":  0.1
+                                             },
+                                             {
+                                                 "id":  "int_vert_bedroom_1",
+                                                 "start_x_m":  3.9496855345911945,
+                                                 "start_y_m":  3.85,
+                                                 "end_x_m":  3.9496855345911945,
+                                                 "end_y_m":  6.5,
+                                                 "thickness_m":  0.1
+                                             },
+                                             {
+                                                 "id":  "int_vert_bedroom_2",
+                                                 "start_x_m":  1.974842767295597,
+                                                 "start_y_m":  3.85,
+                                                 "end_x_m":  1.974842767295597,
+                                                 "end_y_m":  6.5,
+                                                 "thickness_m":  0.1
+                                             }
+                                         ],
+                      "doors":  [
+                                    {
+                                        "wall_id":  "int_foyer_living",
+                                        "x_m":  2.0,
+                                        "y_m":  1.325,
+                                        "width_m":  1.2,
+                                        "is_exterior":  false
+                                    },
+                                    {
+                                        "wall_id":  "int_corridor_south",
+                                        "x_m":  5.2,
+                                        "y_m":  2.65,
+                                        "width_m":  2.0,
+                                        "is_exterior":  false
+                                    },
+                                    {
+                                        "wall_id":  "ext_south",
+                                        "x_m":  1.0,
+                                        "y_m":  0.0,
+                                        "width_m":  1.0,
+                                        "is_exterior":  true
+                                    },
+                                    {
+                                        "wall_id":  "int_corridor_north",
+                                        "x_m":  9.362264150943396,
+                                        "y_m":  3.85,
+                                        "width_m":  0.8,
+                                        "is_exterior":  false
+                                    },
+                                    {
+                                        "wall_id":  "int_corridor_north",
+                                        "x_m":  7.724528301886792,
+                                        "y_m":  3.85,
+                                        "width_m":  0.8,
+                                        "is_exterior":  false
+                                    },
+                                    {
+                                        "wall_id":  "int_corridor_north",
+                                        "x_m":  6.524528301886792,
+                                        "y_m":  3.85,
+                                        "width_m":  0.8,
+                                        "is_exterior":  false
+                                    },
+                                    {
+                                        "wall_id":  "int_corridor_north",
+                                        "x_m":  4.937106918238993,
+                                        "y_m":  3.85,
+                                        "width_m":  0.8,
+                                        "is_exterior":  false
+                                    },
+                                    {
+                                        "wall_id":  "int_corridor_north",
+                                        "x_m":  2.962264150943396,
+                                        "y_m":  3.85,
+                                        "width_m":  0.8,
+                                        "is_exterior":  false
+                                    },
+                                    {
+                                        "wall_id":  "int_corridor_north",
+                                        "x_m":  0.9874213836477983,
+                                        "y_m":  3.85,
+                                        "width_m":  0.8,
+                                        "is_exterior":  false
+                                    }
+                                ],
+                      "furniture":  [
+                                        {
+                                            "room_id":  "foyer",
+                                            "items":  [
+                                                          {
+                                                              "type":  "shoe_rack_bench",
+                                                              "x":  0.1,
+                                                              "y":  0.2,
+                                                              "width_m":  0.4,
+                                                              "depth_m":  0.8,
+                                                              "height_m":  0.45,
+                                                              "rotation_deg":  90
+                                                          }
+                                                      ]
+                                        },
+                                        {
+                                            "room_id":  "living_dining",
+                                            "items":  [
+                                                          {
+                                                              "type":  "dining_table",
+                                                              "x":  2.8,
+                                                              "y":  0.6,
+                                                              "width_m":  1.2,
+                                                              "depth_m":  0.8,
+                                                              "height_m":  0.75,
+                                                              "rotation_deg":  0
+                                                          },
+                                                          {
+                                                              "type":  "chair",
+                                                              "x":  2.8,
+                                                              "y":  0.1,
+                                                              "width_m":  0.4,
+                                                              "depth_m":  0.4,
+                                                              "height_m":  0.85,
+                                                              "rotation_deg":  0
+                                                          },
+                                                          {
+                                                              "type":  "chair",
+                                                              "x":  3.4,
+                                                              "y":  0.1,
+                                                              "width_m":  0.4,
+                                                              "depth_m":  0.4,
+                                                              "height_m":  0.85,
+                                                              "rotation_deg":  0
+                                                          },
+                                                          {
+                                                              "type":  "sofa",
+                                                              "x":  7.5,
+                                                              "y":  0.5,
+                                                              "width_m":  1.8,
+                                                              "depth_m":  0.8,
+                                                              "height_m":  0.8,
+                                                              "rotation_deg":  0
+                                                          },
+                                                          {
+                                                              "type":  "coffee_table",
+                                                              "x":  7.5,
+                                                              "y":  1.5,
+                                                              "width_m":  0.9,
+                                                              "depth_m":  0.5,
+                                                              "height_m":  0.4,
+                                                              "rotation_deg":  0
+                                                          }
+                                                      ]
+                                        },
+                                        {
+                                            "room_id":  "kitchen",
+                                            "items":  [
+                                                          {
+                                                              "type":  "kitchen_counter_sink",
+                                                              "x":  9.7,
+                                                              "y":  4.2,
+                                                              "width_m":  0.6,
+                                                              "depth_m":  2.0,
+                                                              "height_m":  0.9,
+                                                              "rotation_deg":  90
+                                                          },
+                                                          {
+                                                              "type":  "cooking_stove",
+                                                              "x":  8.5,
+                                                              "y":  5.8,
+                                                              "width_m":  0.7,
+                                                              "depth_m":  0.5,
+                                                              "height_m":  0.85,
+                                                              "rotation_deg":  0
+                                                          }
+                                                      ]
+                                        },
+                                        {
+                                            "room_id":  "bathroom_1",
+                                            "items":  [
+                                                          {
+                                                              "type":  "toilet",
+                                                              "x":  7.3,
+                                                              "y":  5.8,
+                                                              "width_m":  0.45,
+                                                              "depth_m":  0.65,
+                                                              "height_m":  0.4,
+                                                              "rotation_deg":  0
+                                                          },
+                                                          {
+                                                              "type":  "wash_basin",
+                                                              "x":  8.0,
+                                                              "y":  5.8,
+                                                              "width_m":  0.4,
+                                                              "depth_m":  0.4,
+                                                              "height_m":  0.85,
+                                                              "rotation_deg":  0
+                                                          }
+                                                      ]
+                                        },
+                                        {
+                                            "room_id":  "bathroom_2",
+                                            "items":  [
+                                                          {
+                                                              "type":  "toilet",
+                                                              "x":  6.1,
+                                                              "y":  5.8,
+                                                              "width_m":  0.45,
+                                                              "depth_m":  0.65,
+                                                              "height_m":  0.4,
+                                                              "rotation_deg":  0
+                                                          },
+                                                          {
+                                                              "type":  "wash_basin",
+                                                              "x":  6.8,
+                                                              "y":  5.8,
+                                                              "width_m":  0.4,
+                                                              "depth_m":  0.4,
+                                                              "height_m":  0.85,
+                                                              "rotation_deg":  0
+                                                          }
+                                                      ]
+                                        },
+                                        {
+                                            "room_id":  "bedroom_1",
+                                            "items":  [
+                                                          {
+                                                              "type":  "bed",
+                                                              "x":  4.1,
+                                                              "y":  4.5,
+                                                              "width_m":  1.4,
+                                                              "depth_m":  1.9,
+                                                              "height_m":  0.5,
+                                                              "rotation_deg":  0
+                                                          }
+                                                      ]
+                                        },
+                                        {
+                                            "room_id":  "bedroom_2",
+                                            "items":  [
+                                                          {
+                                                              "type":  "bed",
+                                                              "x":  2.1,
+                                                              "y":  4.5,
+                                                              "width_m":  1.4,
+                                                              "depth_m":  1.9,
+                                                              "height_m":  0.5,
+                                                              "rotation_deg":  0
+                                                          }
+                                                      ]
+                                        },
+                                        {
+                                            "room_id":  "bedroom_3",
+                                            "items":  [
+                                                          {
+                                                              "type":  "bed",
+                                                              "x":  0.2,
+                                                              "y":  4.5,
+                                                              "width_m":  1.4,
+                                                              "depth_m":  1.9,
+                                                              "height_m":  0.5,
+                                                              "rotation_deg":  0
+                                                          }
+                                                      ]
+                                        }
+                                    ],
+                      "exterior_features":  {
+                                                "porch":  {
+                                                              "enabled":  true,
+                                                              "face":  "south",
+                                                              "width_m":  2.0,
+                                                              "depth_m":  1.2,
+                                                              "offset_along_wall_m":  0.5,
+                                                              "has_roof":  true,
+                                                              "columns":  2,
+                                                              "step_count":  2,
+                                                              "step_height_mm":  150
+                                                          },
+                                                "chimney":  {
+                                                                "enabled":  true,
+                                                                "attached_to_room":  "kitchen",
+                                                                "wall_face":  "east",
+                                                                "width_m":  0.5,
+                                                                "depth_m":  0.4,
+                                                                "extends_above_ridge_m":  0.8
+                                                            }
+                                            },
+                      "material_hints":  {
+                                             "exterior_wall_texture":  "whitewashed_cement_plaster_over_eps",
+                                             "exterior_wall_color":  "#E3DAC9",
+                                             "interior_wall_color":  "#FAF8F5",
+                                             "floor_material":  "local_slate_stone",
+                                             "floor_color":  "#4A4643",
+                                             "roof_material":  "corrugated_galvanized_iron",
+                                             "roof_color":  "#8C3A2B",
+                                             "window_frame_color":  "#3D2314",
+                                             "door_color":  "#3D2314",
+                                             "regional_style":  "Ladakhi mountain shelter â thick EPS core insulation, plaster finish, dark wood trim, stone flooring, solar-optimized orientation"
+                                         },
+                      "walls":  {
+                                    "assembly":  [
+                                                     {
+                                                         "material":  "cement_plaster",
+                                                         "thickness_mm":  12,
+                                                         "r_value_si":  0.0167,
+                                                         "purpose":  "Weather protection"
+                                                     },
+                                                     {
+                                                         "material":  "EPS Insulated Panels",
+                                                         "thickness_mm":  100,
+                                                         "r_value_si":  3.4665,
+                                                         "purpose":  "Load bearing"
+                                                     },
+                                                     {
+                                                         "material":  "EPS Insulated Panels",
+                                                         "thickness_mm":  75,
+                                                         "r_value_si":  2.5999,
+                                                         "purpose":  "Thermal insulation"
+                                                     },
+                                                     {
+                                                         "material":  "cement_plaster",
+                                                         "thickness_mm":  12,
+                                                         "r_value_si":  0.0167,
+                                                         "purpose":  "Interior finish"
+                                                     }
+                                                 ],
+                                    "total_thickness_m":  0.199,
+                                    "r_value_si":  6.27,
+                                    "u_value_si":  0.1595
+                                },
+                      "roof":  {
+                                   "type":  "gable",
+                                   "slope_deg":  10,
+                                   "span_m":  6.5,
+                                   "ridge_height_m":  0.573,
+                                   "beam":  {
+                                                "material":  "timber",
+                                                "width_mm":  75,
+                                                "depth_mm":  250,
+                                                "section":  "75Ã250",
+                                                "spacing_mm":  600,
+                                                "count":  19,
+                                                "bending_moment_knm":  6.021,
+                                                "section_modulus_mm3":  708309.0
+                                            },
+                                   "loads":  {
+                                                 "dead_load_kn_m2":  0.5,
+                                                 "snow_load_kn_m2":  0.4,
+                                                 "total_kn_m2":  1.9
+                                             },
+                                   "overhang_mm":  1153
+                               },
+                      "windows":  [
+                                      {
+                                          "face":  "south",
+                                          "width_m":  1.5,
+                                          "height_m":  1.7,
+                                          "sill_height_m":  0.9,
+                                          "count":  2,
+                                          "area_m2":  5.1
+                                      },
+                                      {
+                                          "face":  "east",
+                                          "width_m":  0.9,
+                                          "height_m":  1.7,
+                                          "sill_height_m":  0.9,
+                                          "count":  1,
+                                          "area_m2":  1.53
+                                      },
+                                      {
+                                          "face":  "west",
+                                          "width_m":  0.6,
+                                          "height_m":  1.7,
+                                          "sill_height_m":  0.9,
+                                          "count":  1,
+                                          "area_m2":  1.02
+                                      },
+                                      {
+                                          "face":  "north",
+                                          "width_m":  1.5,
+                                          "height_m":  1.7,
+                                          "sill_height_m":  0.9,
+                                          "count":  1,
+                                          "area_m2":  2.55
+                                      }
+                                  ],
+                      "foundation":  {
+                                         "type":  "strip_footing",
+                                         "depth_m":  0.6,
+                                         "width_m":  0.45
+                                     },
+                      "climate":  {
+                                      "zone":  "moderate",
+                                      "snow_zone":  "zone_ii",
+                                      "snow_load_kn_m2":  0.5,
+                                      "frost_line_mm":  450,
+                                      "min_roof_slope_deg":  10
+                                  },
+                      "materials":  {
+                                        "structural":  {
+                                                           "id":  "eps",
+                                                           "name":  "EPS Insulated Panels"
+                                                       },
+                                        "insulation":  {
+                                                           "id":  "eps",
+                                                           "name":  "EPS Insulated Panels"
+                                                       },
+                                        "glazing":  {
+                                                        "id":  "low_e_double_glazed",
+                                                        "name":  "Low-E Double Glazed"
+                                                    }
+                                    },
+                      "budget":  {
+                                     "breakdown":  {
+                                                       "structural_masonry_inr":  101829,
+                                                       "rcc_superstructure_inr":  148720,
+                                                       "insulation_inr":  132149,
+                                                       "glazing_windows_inr":  35700,
+                                                       "doors_inr":  98000,
+                                                       "roofing_inr":  151014,
+                                                       "foundation_inr":  338000,
+                                                       "flooring_tiling_inr":  94640,
+                                                       "plastering_inr":  81050,
+                                                       "painting_finishing_inr":  55811,
+                                                       "electrical_inr":  101400,
+                                                       "plumbing_sanitaryware_inr":  81120,
+                                                       "waterproofing_inr":  53090,
+                                                       "construction_labor_inr":  412306,
+                                                       "professional_fees_inr":  131938,
+                                                       "contingency_buffer_inr":  201677
+                                                   },
+                                     "location_premium":  {
+                                                              "zone":  "moderate",
+                                                              "multiplier":  1.0,
+                                                              "reason":  "Standard logistics â no remote area premium applied."
+                                                          },
+                                     "material_subtotal_inr":  1472523,
+                                     "total_estimated_inr":  2218444,
+                                     "user_budget_inr":  300000,
+                                     "within_budget":  false
+                                 },
+                      "narrative":  "Designed for the cold high-altitude environment of Leh, this shelter prioritizes low-cost thermal performance and durability. A southern airlock foyer and main living area maximize passive solar gain into high-mass stone floors while northern bedrooms and utility spaces act as a cold-weather thermal buffer zone. EPS panel walls integrated with cement plaster offer structural rigidity and superior R-value performance on a strict budget. Cross-ventilation pathways leverage natural stack effect through roof-level vents to maintain air freshness without substantial temperature loss.",
+                      "physics_and_compliance":  {
+                                                     "thermal_simulation":  {
+                                                                                "indoor_temp_curve":  [
+                                                                                                          20.51,
+                                                                                                          21.0,
+                                                                                                          21.46,
+                                                                                                          21.89,
+                                                                                                          22.3,
+                                                                                                          22.73,
+                                                                                                          23.2,
+                                                                                                          24.61,
+                                                                                                          26.45,
+                                                                                                          28.54,
+                                                                                                          30.58,
+                                                                                                          32.5,
+                                                                                                          34.39,
+                                                                                                          36.14,
+                                                                                                          37.69,
+                                                                                                          39.26,
+                                                                                                          40.87,
+                                                                                                          42.16,
+                                                                                                          42.69,
+                                                                                                          42.77,
+                                                                                                          42.84,
+                                                                                                          42.9,
+                                                                                                          42.93,
+                                                                                                          42.94,
+                                                                                                          42.93,
+                                                                                                          42.91,
+                                                                                                          42.88,
+                                                                                                          42.84,
+                                                                                                          42.8,
+                                                                                                          42.76,
+                                                                                                          42.8,
+                                                                                                          43.93,
+                                                                                                          45.49,
+                                                                                                          47.25,
+                                                                                                          49.12,
+                                                                                                          51.05,
+                                                                                                          52.84,
+                                                                                                          54.44,
+                                                                                                          56.02,
+                                                                                                          57.54,
+                                                                                                          58.93,
+                                                                                                          60.09,
+                                                                                                          60.27,
+                                                                                                          60.01,
+                                                                                                          59.74,
+                                                                                                          59.44,
+                                                                                                          59.14,
+                                                                                                          58.81
+                                                                                                      ],
+                                                                                "outdoor_temp_curve":  [
+                                                                                                           7.4,
+                                                                                                           6.7,
+                                                                                                           6.1,
+                                                                                                           5.3,
+                                                                                                           4.7,
+                                                                                                           5.7,
+                                                                                                           4.8,
+                                                                                                           7.1,
+                                                                                                           8.7,
+                                                                                                           10.0,
+                                                                                                           11.5,
+                                                                                                           11.9,
+                                                                                                           12.8,
+                                                                                                           13.2,
+                                                                                                           12.9,
+                                                                                                           13.1,
+                                                                                                           12.8,
+                                                                                                           12.0,
+                                                                                                           11.0,
+                                                                                                           10.3,
+                                                                                                           9.7,
+                                                                                                           8.9,
+                                                                                                           8.2,
+                                                                                                           7.1,
+                                                                                                           6.2,
+                                                                                                           5.5,
+                                                                                                           5.0,
+                                                                                                           4.8,
+                                                                                                           4.8,
+                                                                                                           4.7,
+                                                                                                           4.7,
+                                                                                                           7.8,
+                                                                                                           9.5,
+                                                                                                           11.1,
+                                                                                                           12.7,
+                                                                                                           14.0,
+                                                                                                           14.8,
+                                                                                                           15.7,
+                                                                                                           15.7,
+                                                                                                           15.5,
+                                                                                                           15.2,
+                                                                                                           14.1,
+                                                                                                           12.8,
+                                                                                                           12.0,
+                                                                                                           11.0,
+                                                                                                           9.8,
+                                                                                                           8.8,
+                                                                                                           7.8
+                                                                                                       ],
+                                                                                "comfort_score":  15,
+                                                                                "energy_estimate_kwh":  562.57,
+                                                                                "total_ua_w_k":  13.76
+                                                                            },
+                                                     "engineering_gates":  [
+                                                                               {
+                                                                                   "check":  "Span Check",
+                                                                                   "status":  "FAIL",
+                                                                                   "message":  "Span too long",
+                                                                                   "internal_reasoning":  "Calculated span of 10.4m exceeds structural safety limits without center supports."
+                                                                               },
+                                                                               {
+                                                                                   "check":  "Foundation",
+                                                                                   "status":  "PASS",
+                                                                                   "message":  "Foundation OK",
+                                                                                   "internal_reasoning":  "Soil and load combination is within standard geotechnical parameters."
+                                                                               }
+                                                                           ],
+                                                     "weather_data_used":  {
+                                                                               "temperature":  7.4,
+                                                                               "humidity":  39,
+                                                                               "wind_speed":  1.6
+                                                                           }
+                                                 },
+                      "floor_plan_2d_prompt":  "Basic affordable housing layout, utilitarian relief shelter structure, NO luxury features, NO massive glass walls. Production-level 2D architectural floor plan, professional CAD drawing, top-down orthographic, stark contrasting linework on grid, precise wall thicknesses showing EPS panel core with plaster finish, top-down spatial accuracy. Highly detailed diagrammatic style, structural clarity, zero photorealism.",
+                      "floor_plan_3d_prompt":  "Basic affordable housing layout, utilitarian relief shelter structure, NO luxury features, NO massive glass walls. Beautiful, highly detailed 3D architectural rendering of a floor plan, isometric perspective cutaway showing interior layout, simple wooden furniture, and slate flooring. Photorealistic lighting highlighting southern solar penetration, set against a stark, high-altitude Leh mountain landscape.",
+                      "floor_plan_2d_url":  "https://image.pollinations.ai/prompt/Basic%20affordable%20housing%20layout%2C%20utilitarian%20relief%20shelter%20structure%2C%20NO%20luxury%20features%2C%20NO%20massive%20glass%20walls.%20Production-level%202D%20architectural%20floor%20plan%2C%20professional%20CAD%20drawing%2C%20top-down%20orthographic%2C%20stark%20contrasting%20linework%20on%20grid%2C%20precise%20wall%20thicknesses%20showing%20EPS%20panel%20core%20with%20plaster%20finish%2C%20top-down%20spatial%20accuracy.%20Highly%20detailed%20diagrammatic%20style%2C%20structural%20clarity%2C%20zero%20photorealism.%2C%20highly%20detailed%2C%20photorealistic%2C%208k%20resolution%2C%20documentary%20style%2C%20realistic?width=1024\u0026height=1024\u0026nologo=true\u0026seed=b77894c1",
+                      "floor_plan_3d_url":  "https://image.pollinations.ai/prompt/Basic%20affordable%20housing%20layout%2C%20utilitarian%20relief%20shelter%20structure%2C%20NO%20luxury%20features%2C%20NO%20massive%20glass%20walls.%20Beautiful%2C%20highly%20detailed%203D%20architectural%20rendering%20of%20a%20floor%20plan%2C%20isometric%20perspective%20cutaway%20showing%20interior%20layout%2C%20simple%20wooden%20furniture%2C%20and%20slate%20flooring.%20Photorealistic%20lighting%20highlighting%20southern%20solar%20penetration%2C%20set%20against%20a%20stark%2C%20high-altitude%20Leh%20mountain%20landscape.%2C%20highly%20detailed%2C%20photorealistic%2C%208k%20resolution%2C%20documentary%20style%2C%20realistic?width=1024\u0026height=1024\u0026nologo=true\u0026seed=726d2956",
+                      "glb_url":  "/models/model_32cf8c69.glb"
+                  }
+}

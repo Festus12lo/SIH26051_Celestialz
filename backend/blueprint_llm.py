@@ -13,9 +13,15 @@ import os
 import sys
 
 # ─────────────────────────────────────────────────────────────
+# PHYSICS & ENGINEERING MODULES
+# ─────────────────────────────────────────────────────────────
+from engine import generate_simulation_input, run_thermal_simulation
+from engineering_gates import evaluate_engineering_gates
+
+# ─────────────────────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────────────────────
-GEMINI_MODEL = "gemini-3.1-pro"
+GEMINI_MODEL = "gemini-flash-latest"
 GEMINI_TIMEOUT = 45.0
 
 # Room color palette by function
@@ -43,8 +49,9 @@ THERMAL_ZONE_COLORS = {
 from llm_client import LLMPipeline
 from prompts import ARCHITECTURAL_ENRICHMENT_PROMPT
 from image_service import generate_image_url
+from floor_plan_prompt_engine import FloorPlanPromptEngine
 
-async def enrich_with_gemini(spec_summary: dict) -> dict:
+async def enrich_with_gemini(spec_summary: dict, injected_keys: dict = None) -> dict:
     """Ask LLMPipeline to add furniture, exterior features, material hints, descriptions, narrative."""
     user_prompt = (
         "Here is the validated building specification:\n\n"
@@ -53,8 +60,9 @@ async def enrich_with_gemini(spec_summary: dict) -> dict:
         "Adapt everything to the location, climate, and regional architecture."
     )
     
-    pipeline = LLMPipeline()
-    return await pipeline.generate_json(ARCHITECTURAL_ENRICHMENT_PROMPT, user_prompt)
+    pipeline = LLMPipeline(injected_keys)
+    result = await pipeline.generate_json(ARCHITECTURAL_ENRICHMENT_PROMPT, user_prompt)
+    return result, pipeline.primary_rate_limit_hit
 
 def default_enrichment(rooms: list, geometry: dict, climate_zone: str, location: str) -> dict:
     """Fallback enrichment — generates furniture and features without LLM."""
@@ -128,7 +136,7 @@ def _estimate_avg_temp(climate_concerns: list) -> float:
 
 def run_spec_generator(occupancy: int, lat: float, lon: float, budget: int,
                        building_type: str = "residential", climate_concerns: list = None,
-                       location: str = "unknown") -> dict:
+                       location: str = "unknown", resolved_region: dict = None) -> dict:
     """
     Call spec_generator.generate_building_spec() and return its result dict.
     This is the ONLY source of all structural numbers.
@@ -136,7 +144,7 @@ def run_spec_generator(occupancy: int, lat: float, lon: float, budget: int,
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from spec_generator import generate_building_spec
 
-    avg_temp_c = _estimate_avg_temp(climate_concerns)
+    avg_temp_c = resolved_region.get("avg_winter_temp_c") if resolved_region and resolved_region.get("avg_winter_temp_c") is not None else _estimate_avg_temp(climate_concerns)
 
     result = generate_building_spec(
         occupancy=occupancy,
@@ -146,6 +154,7 @@ def run_spec_generator(occupancy: int, lat: float, lon: float, budget: int,
         budget_inr=budget,
         building_type=building_type,
         avg_temp_c=avg_temp_c,
+        resolved_region=resolved_region,
     )
 
     if isinstance(result, str):
@@ -163,7 +172,9 @@ async def generate_blueprint(
     lat: float,
     lon: float,
     climate_concerns: list = None,
-    building_type: str = "residential"
+    building_type: str = "residential",
+    injected_keys: dict = None,
+    resolved_region: dict = None
 ) -> dict:
     llm_source = "spec_generator_only"
     
@@ -171,7 +182,7 @@ async def generate_blueprint(
     try:
         spec = await asyncio.to_thread(
             run_spec_generator,
-            occupancy, lat, lon, budget, building_type, climate_concerns, location
+            occupancy, lat, lon, budget, building_type, climate_concerns, location, resolved_region
         )
     except Exception as e:
         raise RuntimeError(f"spec_generator failed: {e}")
@@ -197,6 +208,62 @@ async def generate_blueprint(
     building_width_m  = floor_plan.get("width_mm", 6000) / 1000.0
     ceiling_height_m  = floor_plan.get("ceiling_height_mm", 2700) / 1000.0
     ridge_height_m    = roof.get("ridge_height_mm", 1500) / 1000.0
+    
+    # ── SAFEGUARD: Override construction supplements for emergency shelters ──
+    if building_type == "emergency" and "breakdown" in budget_data:
+        b = budget_data["breakdown"]
+        for key in ["foundation_inr", "professional_fees_inr", "plastering_inr", "contingency_buffer_inr", "painting_finishing_inr"]:
+            if key in b:
+                b[key] = 0
+        budget_data["total_estimated_inr"] = sum(v for k, v in b.items() if isinstance(v, (int, float)))
+    
+
+    # ── Step 2.5: Physics & Compliance Engine ───────────────────
+    physics_and_compliance = {}
+    try:
+        # Prepare material IDs mapping
+        selected_material_ids = {}
+        if materials:
+            for cat, mat in materials.items():
+                if isinstance(mat, dict) and "id" in mat:
+                    selected_material_ids[cat] = mat["id"]
+        
+        # 1. Fetch simulation inputs (live weather and full material data from DB)
+        sim_input = await generate_simulation_input(lat, lon, selected_material_ids)
+        weather_data = sim_input.get("environmental_data", {})
+        shelter_materials = sim_input.get("shelter_materials", {})
+        
+        # 2. Run Thermal Simulation
+        building_dimensions = {
+            "wall_area_m2": shape_data.get("wall_area_m2", building_length_m * ceiling_height_m * 2 + building_width_m * ceiling_height_m * 2),
+            "roof_area_m2": shape_data.get("roof_area_m2", building_length_m * building_width_m),
+            "window_area_m2": windows.get("total_area_m2", 4.0)
+        }
+        
+        # Run simulation in a thread if it's synchronous
+        thermal_results = await asyncio.to_thread(
+            run_thermal_simulation,
+            weather_data, shelter_materials, occupancy, building_dimensions
+        )
+        
+        # 3. Evaluate Engineering Gates
+        design_params = {
+            "wall_span_m": max(building_length_m, building_width_m),
+            "roof_slope_deg": roof.get("slope_deg", 10.0),
+            "window_ratio": windows.get("window_to_wall_ratio", 0.1),
+            "soil_type": "loam" # We don't have soil type in spec generator right now, use default
+        }
+        
+        gate_results = evaluate_engineering_gates(design_params, weather_data, shelter_materials)
+        
+        physics_and_compliance = {
+            "thermal_simulation": thermal_results,
+            "engineering_gates": gate_results,
+            "weather_data_used": weather_data.get("current", {})
+        }
+    except Exception as e:
+        print(f"Physics engine skipped or failed: {e}")
+        physics_and_compliance = {"error": str(e)}
     
     # ── Step 2: Enrich rooms with function/thermal data ─────────
     enriched_rooms = []
@@ -224,6 +291,42 @@ async def generate_blueprint(
         else:
             shelter_tier = "Permanent Shelter (cost-effective, durable, permanent)"
             
+    # ── KEY CHANGE: Parse windows, doors, and walls BEFORE LLM enrichment ──
+    window_list = []
+    walls_data = windows.get("walls", {})
+    for face, wdata in walls_data.items():
+        if wdata.get("has_window"):
+            window_list.append({
+                "face": face,
+                "width_m": round(wdata["width_mm"] / 1000, 2),
+                "height_m": round(wdata["height_mm"] / 1000, 2),
+                "sill_height_m": round(wdata["sill_height_mm"] / 1000, 2),
+                "count": wdata["num_windows"],
+                "area_m2": wdata["area_m2"],
+            })
+            
+    interior_walls = []
+    for w in geo_walls:
+        if not w.get("is_exterior", True):
+            interior_walls.append({
+                "id": w["id"],
+                "start_x_m": w["start"][0] / 1000,
+                "start_y_m": w["start"][1] / 1000,
+                "end_x_m": w["end"][0] / 1000,
+                "end_y_m": w["end"][1] / 1000,
+                "thickness_m": w.get("thickness", 100) / 1000,
+            })
+            
+    parsed_doors = []
+    for d in geo_doors:
+        parsed_doors.append({
+            "wall_id": d["wall_id"],
+            "x_m": d["pos"][0] / 1000,
+            "y_m": d["pos"][1] / 1000,
+            "width_m": d["width"] / 1000,
+            "is_exterior": "ext" in d["wall_id"],
+        })
+
     spec_for_gemini = {
         "location": location,
         "climate_zone": climate.get("zone", "moderate"),
@@ -238,16 +341,18 @@ async def generate_blueprint(
                    "y_m": r["y"] / 1000 if r["y"] > 100 else r["y"],
                    "width_m": r["width_m"], "length_m": r["length_m"]}
                   for r in enriched_rooms],
-        "wall_r_value": wall_assembly.get("r_value_total"),
+        "interior_walls": interior_walls,
+        "doors": parsed_doors,
+        "windows": window_list,
         "wall_materials": [l["material"] for l in wall_assembly.get("layers", [])],
         "roof_type": roof.get("type", "gable"),
-        "roof_slope_deg": roof.get("slope_deg"),
-        "solar_geometry": shape_data.get("solar_geometry", {}),
     }
     
     enrichment = None
+    rate_limit_hit = False
     try:
-        enrichment = await enrich_with_gemini(spec_for_gemini)
+        enrichment, rl_hit = await enrich_with_gemini(spec_for_gemini, injected_keys)
+        rate_limit_hit = rl_hit
         llm_source = f"gemini/{GEMINI_MODEL}"
         print(f"Blueprint enriched by Gemini ({GEMINI_MODEL})")
     except Exception as e:
@@ -260,54 +365,21 @@ async def generate_blueprint(
     for room in enriched_rooms:
         room["description"] = room_descriptions.get(room["id"], "")
     
-    # ── Step 5: Window list for 3D ──────────────────────────────
-    window_list = []
-    walls_data = windows.get("walls", {})
-    for face, wdata in walls_data.items():
-        if wdata.get("has_window"):
-            window_list.append({
-                "face": face,
-                "width_m": round(wdata["width_mm"] / 1000, 2),
-                "height_m": round(wdata["height_mm"] / 1000, 2),
-                "sill_height_m": round(wdata["sill_height_mm"] / 1000, 2),
-                "count": wdata["num_windows"],
-                "area_m2": wdata["area_m2"],
-                "shgc": wdata["shgc"],
-                "u_value": wdata.get("u_value", 2.8),
-            })
-    
-    # ── Step 6: Convert geometry walls/doors to meters ──────────
-    interior_walls = []
-    for w in geo_walls:
-        if not w.get("is_exterior", True):
-            interior_walls.append({
-                "id": w["id"],
-                "start_x_m": w["start"][0] / 1000,
-                "start_y_m": w["start"][1] / 1000,
-                "end_x_m": w["end"][0] / 1000,
-                "end_y_m": w["end"][1] / 1000,
-                "thickness_mm": w.get("thickness", 100),
-            })
-    
-    doors = []
-    for d in geo_doors:
-        doors.append({
-            "wall_id": d["wall_id"],
-            "x_m": d["pos"][0] / 1000,
-            "y_m": d["pos"][1] / 1000,
-            "width_m": d["width"] / 1000,
-            "height_m": d["height"] / 1000,
-            "rotation_deg": d.get("rot", 0),
-            "is_exterior": "ext" in d["wall_id"],
-        })
+    # Step 5 and 6 have been hoisted above to prepare LLM context.
+    # We rename parsed_doors back to doors for step 7.
+    doors = parsed_doors
     
     # ── Step 7: Assemble final blueprint ────────────────────────
     blueprint = {
         "meta": {
             "location": location, "lat": lat, "lon": lon,
+            "altitude_m": spec.get("location", {}).get("altitude_m", 200),
+            "state": spec.get("location", {}).get("state", ""),
             "occupancy": occupancy, "building_type": building_type,
             "llm_source": llm_source,
+            "rate_limit_hit": rate_limit_hit,
         },
+        "building_type": building_type,
         "building": {
             "length_m": building_length_m, "width_m": building_width_m,
             "ceiling_height_m": ceiling_height_m, "ridge_height_m": ridge_height_m,
@@ -347,19 +419,67 @@ async def generate_blueprint(
         },
         "climate": climate,
         "materials": materials,
+        "materials_selected": materials,
         "budget": budget_data,
         "narrative": enrichment.get("narrative", ""),
+        "physics_and_compliance": physics_and_compliance,
+        "design_brief": spec.get("design_brief", ""),
+        "bioclimatic_strategy": spec.get("bioclimatic_strategy", {}),
+        "zoning_rationale": spec.get("zoning_rationale", {}),
+        "code_compliance": spec.get("code_compliance", []),
+        "material_impact": spec.get("material_impact", {}),
+        "heat_balance": spec.get("heat_balance", {}),
     }
     
-    # ── Step 8: Generate AI Image ───────────────────────────────
-    prompt = enrichment.get("image_generation_prompt", "Hyper-realistic architectural exterior photography of a passive solar shelter, cinematic lighting, 8k resolution, photorealistic.")
-    blueprint["image_generation_prompt"] = prompt
+    # ── Step 8: Generate AI Images (2D & 3D) via Prompt Engine ──────────
+    prompt_engine = FloorPlanPromptEngine()
+    try:
+        prompt_2d, prompt_3d = prompt_engine.generate(
+            floor_plan=floor_plan,
+            wall_assembly=wall_assembly,
+            climate=climate,
+            roof=roof,
+            foundation=foundation,
+            materials=materials,
+            ventilation=spec.get("ventilation", {}),
+            shape_data=shape_data,
+            building_type=building_type,
+            location=location,
+            lat=lat,
+            resolved_region=resolved_region,
+        )
+    except Exception as e:
+        print(f"Prompt engine failed, using fallback: {e}")
+        prompt_2d = "Production-level 2D architectural floor plan, professional CAD drawing, top-down orthographic, stark contrasting linework on grid, precise wall thicknesses, top-down spatial accuracy."
+        prompt_3d = "Beautiful, highly detailed 3D architectural rendering of a floor plan, isometric perspective cutaway showing interior layout and furniture."
+    
+    blueprint["floor_plan_2d_prompt"] = prompt_2d
+    blueprint["floor_plan_3d_prompt"] = prompt_3d
     
     try:
-        blueprint["image_url"] = await generate_image_url(prompt)
+        blueprint["floor_plan_2d_url"] = await generate_image_url(prompt_2d, injected_keys)
     except Exception as e:
-        print(f"Image generation failed: {e}")
-        blueprint["image_url"] = ""
+        print(f"2D Image generation failed: {e}")
+        blueprint["floor_plan_2d_url"] = ""
+
+    try:
+        blueprint["floor_plan_3d_url"] = await generate_image_url(prompt_3d, injected_keys)
+    except Exception as e:
+        print(f"3D Image generation failed: {e}")
+        blueprint["floor_plan_3d_url"] = ""
+
+    # ── Step 9: Generate 3D Geometry GLB ────────────────────────
+    import uuid
+    from geometry_builder import GeometryBuilder
+    
+    try:
+        builder = GeometryBuilder(blueprint, "../public/models")
+        glb_filename = f"model_{uuid.uuid4().hex[:8]}.glb"
+        builder.generate_glb(glb_filename)
+        blueprint["glb_url"] = f"/models/{glb_filename}"
+    except Exception as e:
+        print(f"GLB generation failed: {e}")
+        blueprint["glb_url"] = ""
 
     return blueprint
 

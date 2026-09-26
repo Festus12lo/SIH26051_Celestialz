@@ -1,8 +1,7 @@
 """
 ThermoShelter — Multi-Model Image Generation Service
 Routes highly detailed architectural prompts to the best available AI image generator.
-If an API key is present in .env, it uses it. If not (or if it fails/rate-limits),
-it gracefully falls back to a free zero-setup alternative.
+Currently supports Gemini 3.1 Flash Image (Premium), Stability AI (Premium), and Pollinations.ai (Free Fallback).
 """
 
 import os
@@ -11,37 +10,94 @@ import httpx
 import base64
 from dotenv import load_dotenv
 import asyncio
+from google import genai
+from google.genai import types
 
 load_dotenv()
 
-# The premier open-source model for architectural realism
-HF_MODEL_URL = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
-
-async def generate_image_url(prompt: str) -> str:
+async def generate_image_url(prompt: str, injected_keys: dict = None) -> str:
     """
     Takes an architectural prompt and returns an image URL that the frontend can render.
     If using an API that returns bytes, it returns a base64 data URI string.
     """
     print(f"[ImageService] Routing image generation request...")
     
-    # ── 1. STABILITY AI (Stable Image Core) - Top Priority Premium ──
+    # ── 1. NVIDIA AI (Stable Diffusion XL) - New Top Priority ──
+    nvidia_key = (injected_keys.get("nvidia") if injected_keys else None) or os.getenv("NVIDIA_API_KEY")
+    if nvidia_key and nvidia_key.strip():
+        print(f"[ImageService] Found NVIDIA API key. Attempting NVIDIA Image generation...")
+        try:
+            from openai import AsyncOpenAI
+            client = AsyncOpenAI(
+                base_url="https://integrate.api.nvidia.com/v1",
+                api_key=nvidia_key.strip(),
+                timeout=10.0
+            )
+            response = await asyncio.wait_for(
+                client.images.generate(
+                    model="stabilityai/stable-diffusion-xl-base-1.0",
+                    prompt=prompt,
+                    size="1024x1024",
+                    n=1,
+                    response_format="b64_json"
+                ),
+                timeout=12.0
+            )
+            if response.data and len(response.data) > 0 and response.data[0].b64_json:
+                base64_img = response.data[0].b64_json
+                print(f"[ImageService] NVIDIA AI image successfully generated!")
+                return f"data:image/jpeg;base64,{base64_img}"
+            elif response.data and len(response.data) > 0 and response.data[0].url:
+                url = response.data[0].url
+                print(f"[ImageService] NVIDIA AI image successfully generated! (URL)")
+                return url
+        except Exception as e:
+            print(f"[ImageService] NVIDIA Image generation threw an exception: {e}")
+
+    # ── 2. GEMINI 3.1 FLASH IMAGE - Fallback 1 ──
+    gemini_key = (injected_keys.get("gemini") if injected_keys else None) or os.getenv("GEMINI_API_KEY")
+    if gemini_key and gemini_key.strip():
+        print(f"[ImageService] Found Gemini API key. Attempting Gemini 3.1 Flash Image generation...")
+        try:
+            client = genai.Client(api_key=gemini_key.strip())
+            result = await asyncio.wait_for(
+                client.aio.interactions.create(
+                    model='gemini-3.1-flash-image',
+                    input=prompt,
+                    response_format={
+                        "type": "image",
+                        "mime_type": "image/jpeg",
+                        "aspect_ratio": "16:9"
+                    }
+                ),
+                timeout=10.0
+            )
+            if result.output_image and result.output_image.data:
+                base64_img = result.output_image.data
+                print(f"[ImageService] Gemini AI image successfully generated!")
+                return f"data:image/jpeg;base64,{base64_img}"
+        except Exception as e:
+            print(f"[ImageService] Gemini Image generation threw an exception: {e}")
+
+    # ── 2. STABILITY AI (Stable Image Core) - Fallback 1 ──
     stability_keys_raw = os.getenv("STABILITY_API_KEY")
     if stability_keys_raw and stability_keys_raw.strip():
         import random
         keys = [k.strip() for k in stability_keys_raw.split(',') if k.strip()]
         stability_key = random.choice(keys)
         
-        print(f"[ImageService] Found Stability keys. Using key ending in ...{stability_key[-4:]}. Attempting Stable Image Core generation...")
+        print(f"[ImageService] Found Stability keys. Attempting Stable Image Core generation...")
         headers = {
             "Authorization": f"Bearer {stability_key}",
             "Accept": "image/*"
         }
         files = {
             "prompt": (None, prompt),
+            "negative_prompt": (None, "luxury, mansion, expensive, glossy, polished, manicured lawns, unreal engine, cinematic, fancy"),
             "output_format": (None, "jpeg")
         }
         try:
-            async with httpx.AsyncClient(timeout=45.0) as client:
+            async with httpx.AsyncClient(timeout=5.0) as client:
                 response = await client.post("https://api.stability.ai/v2beta/stable-image/generate/core", headers=headers, files=files)
                 if response.status_code == 200:
                     image_bytes = response.content
@@ -53,113 +109,15 @@ async def generate_image_url(prompt: str) -> str:
         except Exception as e:
             print(f"[ImageService] Stability AI threw an exception: {e}")
     
-    # ── 1. OPENAI (DALL-E 3) - Premium Priority ──
-    openai_key = os.getenv("OPENAI_API_KEY")
-    if openai_key and openai_key.strip():
-        print(f"[ImageService] Found OpenAI key. Attempting DALL-E 3 generation...")
-        headers = {
-            "Authorization": f"Bearer {openai_key.strip()}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": "gpt-image-2",
-            "prompt": prompt,
-            "n": 1,
-            "size": "1024x1024"
-        }
-        
-        try:
-            async with httpx.AsyncClient(timeout=45.0) as client:
-                response = await client.post("https://api.openai.com/v1/images/generations", headers=headers, json=payload)
-                if response.status_code == 200:
-                    data = response.json()
-                    image_url = data["data"][0]["url"]
-                    print(f"[ImageService] OpenAI image successfully generated!")
-                    return image_url
-                else:
-                    print(f"[ImageService] OpenAI failed ({response.status_code}): {response.text}")
-        except Exception as e:
-            print(f"[ImageService] OpenAI threw an exception: {e}")
-
-    # ── 2. FAL.AI (FLUX.1-schnell via Fal) - High Speed Premium ──
-    fal_key = os.getenv("FAL_API_KEY")
-    if fal_key and fal_key.strip():
-        print(f"[ImageService] Found Fal.ai key. Attempting FLUX generation...")
-        headers = {
-            "Authorization": f"Key {fal_key.strip()}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "prompt": prompt,
-            "image_size": "square_hd"
-        }
-        try:
-            async with httpx.AsyncClient(timeout=45.0) as client:
-                response = await client.post("https://fal.run/fal-ai/flux/schnell", headers=headers, json=payload)
-                if response.status_code == 200:
-                    data = response.json()
-                    if "images" in data and len(data["images"]) > 0:
-                        image_url = data["images"][0]["url"]
-                        print(f"[ImageService] Fal.ai image successfully generated!")
-                        return image_url
-                print(f"[ImageService] Fal.ai failed ({response.status_code}): {response.text}")
-        except Exception as e:
-            print(f"[ImageService] Fal.ai threw an exception: {e}")
-
-
-    # ── 3. HUGGING FACE (Fallback 1) ──
-    hf_key = os.getenv("HUGGINGFACE_API_KEY")
-    if hf_key and hf_key.strip():
-        print(f"[ImageService] Found HuggingFace key. Attempting FLUX.1 generation...")
-        headers = {"Authorization": f"Bearer {hf_key.strip()}"}
-        payload = {"inputs": prompt}
-        
-        try:
-            async with httpx.AsyncClient(timeout=45.0) as client:
-                response = await client.post(HF_MODEL_URL, headers=headers, json=payload)
-                if response.status_code == 200:
-                    # Convert binary image bytes to Base64 Data URI so the frontend can render it instantly
-                    image_bytes = response.content
-                    base64_img = base64.b64encode(image_bytes).decode('utf-8')
-                    print(f"[ImageService] HuggingFace image successfully generated!")
-                    return f"data:image/jpeg;base64,{base64_img}"
-                else:
-                    print(f"[ImageService] HuggingFace failed ({response.status_code}): {response.text}")
-        except Exception as e:
-            print(f"[ImageService] HuggingFace threw an exception: {e}")
-            
-    # ── 4. REPLICATE (SDXL) - Fallback Premium ──
-    replicate_key = os.getenv("REPLICATE_API_KEY")
-    if replicate_key and replicate_key.strip():
-        print(f"[ImageService] Found Replicate key. Attempting SDXL generation...")
-        headers = {
-            "Authorization": f"Bearer {replicate_key.strip()}",
-            "Prefer": "wait"
-        }
-        payload = {
-            "input": {"prompt": prompt}
-        }
-        try:
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                response = await client.post("https://api.replicate.com/v1/models/stability-ai/sdxl/predictions", headers=headers, json=payload)
-                if response.status_code in [200, 201]:
-                    data = response.json()
-                    if data.get("status") == "succeeded" and data.get("output"):
-                        image_url = data["output"][0]
-                        print(f"[ImageService] Replicate image successfully generated!")
-                        return image_url
-                    else:
-                        print(f"[ImageService] Replicate generation not immediately ready or failed: {data.get('status')}")
-                else:
-                    print(f"[ImageService] Replicate failed ({response.status_code}): {response.text}")
-        except Exception as e:
-            print(f"[ImageService] Replicate threw an exception: {e}")
-
-    # ── 5. POLLINATIONS.AI (Free Fallback) ──
+    # ── 3. POLLINATIONS.AI (Free Fallback) ──
     print(f"[ImageService] Falling back to free Pollinations.ai...")
-    encoded_prompt = urllib.parse.quote(prompt)
+    
+    # Enhancing prompt for Pollinations to ensure better quality architectural output
+    enhanced_prompt = prompt + ", highly detailed, photorealistic, 8k resolution, documentary style, realistic"
+    encoded_prompt = urllib.parse.quote(enhanced_prompt)
+    
     # Pollinations simply returns the image bytes directly when you hit this URL
-    fallback_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true"
+    fallback_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true&seed={os.urandom(4).hex()}"
     print(f"[ImageService] Generated Pollinations fallback URL.")
     return fallback_url
 

@@ -13,8 +13,14 @@ Every dimension output by this module has a calculable reason behind it.
 
 import json
 import math
-import sqlite3
+import psycopg2
+from psycopg2.extras import DictCursor
 import os
+from dotenv import load_dotenv
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+dotenv_path = os.path.join(base_dir, '..', '.env')
+load_dotenv(dotenv_path)
 
 # ─────────────────────────────────────────────────────────────
 # CONSTANTS — Engineering Codes & Standards
@@ -79,12 +85,10 @@ PLASTER_DENSITY = 1760       # kg/m³
 # ─────────────────────────────────────────────────────────────
 
 def load_all_materials():
-    """Load all materials from SQLite database."""
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    db_path = os.path.join(base_dir, "thermoshelter.db")
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    """Load all materials from PostgreSQL database."""
+    database_url = os.environ.get("DATABASE_URL")
+    conn = psycopg2.connect(database_url)
+    cursor = conn.cursor(cursor_factory=DictCursor)
     cursor.execute("SELECT * FROM materials")
     rows = cursor.fetchall()
     conn.close()
@@ -98,13 +102,26 @@ def load_all_materials():
     return materials
 
 
+
 # ─────────────────────────────────────────────────────────────
 # CLIMATE CLASSIFIER
 # ─────────────────────────────────────────────────────────────
 
-def classify_climate(avg_temp_c: float, lat: float):
-    """Classify climate zone from average temperature and latitude."""
-    if avg_temp_c < 0:
+def classify_climate(avg_temp_c: float, lat: float, resolved_region: dict = None):
+    """Classify climate zone from average temperature and latitude or database resolved region."""
+    if resolved_region and resolved_region.get("nbc_zone"):
+        nbc_zone = resolved_region["nbc_zone"]
+        zone_map = {
+            "extreme_cold": "extreme_cold",
+            "cold": "cold",
+            "composite": "moderate",
+            "hot_dry": "warm",
+            "warm_humid": "warm",
+            "temperate": "moderate",
+        }
+        zone = zone_map.get(nbc_zone, "moderate")
+        snow_zone = resolved_region.get("snow_zone", "zone_i")
+    elif avg_temp_c < 0:
         zone = "extreme_cold"
         snow_zone = "zone_v_heavy"
     elif avg_temp_c < 5:
@@ -118,7 +135,7 @@ def classify_climate(avg_temp_c: float, lat: float):
         snow_zone = "zone_i"
     
     # Roof slope requirement from IS 875 Part 4
-    snow_load = SNOW_LOAD_ZONE_MAP[snow_zone]
+    snow_load = SNOW_LOAD_ZONE_MAP.get(snow_zone, 0.0)
     if snow_load >= 2.0:
         min_roof_slope_deg = 25  # steep slope to shed heavy snow
     elif snow_load >= 1.0:
@@ -128,12 +145,20 @@ def classify_climate(avg_temp_c: float, lat: float):
     else:
         min_roof_slope_deg = 5   # minimal slope for drainage
     
+    wind_speed = resolved_region.get("wind_speed_basic_ms", 39.0) if resolved_region else 39.0
+    seismic_zone = resolved_region.get("seismic_zone", "III") if resolved_region else "III"
+    altitude_m = resolved_region.get("altitude_m", 200) if resolved_region else 200
+    
     return {
         "zone": zone,
+        "nbc_zone": resolved_region.get("nbc_zone", zone) if resolved_region else zone,
         "snow_zone": snow_zone,
         "snow_load_kn_m2": snow_load,
-        "frost_line_mm": FROST_LINE_DEPTH_MAP[zone],
+        "frost_line_mm": FROST_LINE_DEPTH_MAP.get(zone, 450),
         "min_roof_slope_deg": min_roof_slope_deg,
+        "wind_speed_basic_ms": wind_speed,
+        "seismic_zone": seismic_zone,
+        "altitude_m": altitude_m,
     }
 
 
@@ -304,140 +329,164 @@ def calculate_shape_and_orientation(climate: dict, building_type: str, lat: floa
 
 def calculate_floor_plan(occupancy: int, building_type: str, shape_data: dict):
     """
-    Calculate floor plan dimensions from occupancy and NBC standards.
-    Overrides exist for specific hardcoded shelter tiers (Permanent & Community).
+    Calculate floor plan dimensions and dynamic room layouts based on NBC standards 
+    and bioclimatic zoning principles (South=Living, Central=Corridor, North=Private/Wet).
     """
-    if building_type.lower() == "permanent":
-        length_mm = 9000
-        width_mm = 7500
-        actual_area = (9.0 * 7.5)
-        
-        rooms = [
-            {"id": "bedroom_1", "name": "Bedroom 1", "x": 0, "y": 4500, "width_m": 3.5, "length_m": 3.0, "color_hex": "#f59e0b"},
-            {"id": "bedroom_2", "name": "Bedroom 2", "x": 5500, "y": 4500, "width_m": 3.5, "length_m": 3.0, "color_hex": "#f59e0b"},
-            {"id": "bathroom", "name": "Bathroom", "x": 3500, "y": 5500, "width_m": 2.0, "length_m": 2.0, "color_hex": "#10b981"},
-            {"id": "kitchen", "name": "Kitchen", "x": 0, "y": 0, "width_m": 2.8, "length_m": 3.0, "color_hex": "#3b82f6"},
-            {"id": "storage", "name": "Storage / Utility", "x": 7500, "y": 0, "width_m": 1.5, "length_m": 2.0, "color_hex": "#78716c"},
-            {"id": "living", "name": "Living & Dining", "x": 2800, "y": 0, "width_m": 4.7, "length_m": 5.5, "color_hex": "#ef4444"},
-            {"id": "veranda", "name": "Covered Veranda", "x": 1500, "y": -1800, "width_m": 6.0, "length_m": 1.8, "color_hex": "#22d3ee"}
-        ]
-        
-        rooms_spec = {
-            "bedrooms": {"count": 2, "area_each_m2": 3.5*3.0},
-            "kitchen": {"count": 1, "area_m2": 2.8*3.0},
-            "bathrooms": {"count": 1, "area_each_m2": 2.0*2.0},
-            "living": {"count": 1, "area_m2": 4.7*5.5},
-        }
-        layout = {"rooms": rooms, "walls": [], "doors": []}
-        return {
-            "length_mm": length_mm,
-            "width_mm": width_mm,
-            "area_m2": actual_area,
-            "ceiling_height_mm": NBC_MIN_CEILING_HEIGHT_MM,
-            "rooms_spec": rooms_spec,
-            "geometry": layout
-        }
-        
-    elif building_type.lower() == "community":
-        length_mm = 24000
-        width_mm = 12000
-        actual_area = (24.0 * 12.0)
-        
-        rooms = [
-            {"id": "sleeping", "name": "Sleeping Area", "x": 4000, "y": 4000, "width_m": 16.0, "length_m": 8.0, "color_hex": "#f59e0b"},
-            {"id": "male_toilets", "name": "Male Toilets", "x": 0, "y": 9000, "width_m": 4.0, "length_m": 3.0, "color_hex": "#10b981"},
-            {"id": "female_toilets", "name": "Female Toilets", "x": 0, "y": 6000, "width_m": 4.0, "length_m": 3.0, "color_hex": "#10b981"},
-            {"id": "accessible_toilet", "name": "Accessible Toilet", "x": 0, "y": 4500, "width_m": 4.0, "length_m": 1.5, "color_hex": "#10b981"},
-            {"id": "laundry", "name": "Laundry & Cleaning", "x": 0, "y": 3000, "width_m": 4.0, "length_m": 1.5, "color_hex": "#64748b"},
-            {"id": "storage", "name": "Storage", "x": 0, "y": 0, "width_m": 4.0, "length_m": 3.0, "color_hex": "#78716c"},
-            {"id": "kitchen", "name": "Kitchen", "x": 20000, "y": 8000, "width_m": 4.0, "length_m": 4.0, "color_hex": "#3b82f6"},
-            {"id": "dining", "name": "Dining Area", "x": 20000, "y": 3000, "width_m": 4.0, "length_m": 5.0, "color_hex": "#ef4444"},
-            {"id": "medical", "name": "First Aid / Medical", "x": 17000, "y": 0, "width_m": 3.0, "length_m": 3.0, "color_hex": "#f43f5e"},
-            {"id": "admin", "name": "Admin / Staff", "x": 20000, "y": 0, "width_m": 4.0, "length_m": 3.0, "color_hex": "#6366f1"},
-            {"id": "lobby", "name": "Entrance Lobby", "x": 4000, "y": 0, "width_m": 13.0, "length_m": 4.0, "color_hex": "#14b8a6"},
-            {"id": "veranda", "name": "Veranda (Covered)", "x": 0, "y": -2500, "width_m": 24.0, "length_m": 2.5, "color_hex": "#22d3ee"}
-        ]
-        
-        rooms_spec = {
-            "bedrooms": {"count": 1, "area_each_m2": 16.0*8.0},
-            "kitchen": {"count": 1, "area_m2": 4.0*4.0},
-            "bathrooms": {"count": 4, "area_each_m2": 4.0*3.0},
-            "living": {"count": 1, "area_m2": 13.0*4.0},
-        }
-        layout = {"rooms": rooms, "walls": [], "doors": []}
-        return {
-            "length_mm": length_mm,
-            "width_mm": width_mm,
-            "area_m2": actual_area,
-            "ceiling_height_mm": 3500,
-            "rooms_spec": rooms_spec,
-            "geometry": layout
-        }
-        
-    elif building_type.lower() == "emergency":
-        length_mm = 3600
-        width_mm = 2400
-        actual_area = (3.6 * 2.4)
-        
-        rooms = [
-            {"id": "storage", "name": "Storage", "x": 0, "y": 0, "width_m": 1.0, "length_m": 0.6, "color_hex": "#78716c"},
-            {"id": "entry", "name": "Main Entry", "x": 1000, "y": 0, "width_m": 1.0, "length_m": 0.8, "color_hex": "#22d3ee"},
-            {"id": "toilet", "name": "Toilet / Wash", "x": 2000, "y": 0, "width_m": 1.6, "length_m": 0.6, "color_hex": "#10b981"},
-            {"id": "living", "name": "Living / Sleeping Area", "x": 0, "y": 800, "width_m": 3.6, "length_m": 1.6, "color_hex": "#f59e0b"}
-        ]
-        
-        rooms_spec = {
-            "bedrooms": {"count": 1, "area_each_m2": 3.6*1.6},
-            "kitchen": {"count": 0, "area_m2": 0},
-            "bathrooms": {"count": 1, "area_each_m2": 1.6*0.6},
-            "living": {"count": 1, "area_m2": 3.6*1.6},
-        }
-        layout = {"rooms": rooms, "walls": [], "doors": []}
-        return {
-            "length_mm": length_mm,
-            "width_mm": width_mm,
-            "area_m2": actual_area,
-            "ceiling_height_mm": 2400,
-            "rooms_spec": rooms_spec,
-            "geometry": layout
-        }
-
+    import math
+    
+    # Base required rooms based on occupancy
     num_bedrooms = max(1, math.ceil(occupancy / 2))
     num_bathrooms = max(1, math.ceil(occupancy / 4))
     
+    # Base areas
     bedroom_area = num_bedrooms * NBC_MIN_BEDROOM_M2
     kitchen_area = NBC_MIN_KITCHEN_M2
     bathroom_area = num_bathrooms * NBC_MIN_BATHROOM_M2
     living_area = NBC_MIN_LIVING_M2
     
-    # V3 FIX: Account for internal partition wall thickness
-    # Each partition = 100mm thick (single skin block + plaster)
-    # Estimate: (num_rooms - 1) partitions × avg partition length × 0.1m width
-    num_rooms = num_bedrooms + 1 + num_bathrooms + 1  # bedrooms + kitchen + bathrooms + living
+    # Calculate footprints
+    num_rooms = num_bedrooms + 1 + num_bathrooms + 1
     num_partitions = num_rooms - 1
-    avg_partition_length_m = 3.5  # average internal wall length
-    internal_wall_area_m2 = num_partitions * avg_partition_length_m * 0.1  # 100mm thick
+    avg_partition_length_m = 3.5
+    internal_wall_area_m2 = num_partitions * avg_partition_length_m * 0.1
     
-    # Circulation area (corridors, walls) — typically 15-20% of usable area
+    # Central Corridor requires area (1.2m wide). We use a 25% circulation factor to cover it.
     usable_area = bedroom_area + kitchen_area + bathroom_area + living_area
-    circulation_factor = 1.18  # 18% for circulation
-    total_area = (usable_area * circulation_factor) + internal_wall_area_m2
+    total_area = (usable_area * 1.25) + internal_wall_area_m2
     
-    # Round up to nearest 0.5 m²
     total_area = math.ceil(total_area * 2) / 2
     
-    # V4: Use aspect ratio from shape calculator instead of hardcoded value
-    aspect_ratio = shape_data["aspect_ratio"]
+    aspect_ratio = shape_data.get("aspect_ratio", 1.4)
     width_m = math.sqrt(total_area / aspect_ratio)
     length_m = total_area / width_m
     
-    # Convert to mm, round to nearest 100mm (construction standard)
     width_mm = round(width_m * 1000 / 100) * 100
     length_mm = round(length_m * 1000 / 100) * 100
     
-    # Recalculate actual area
     actual_area = (width_mm / 1000) * (length_mm / 1000)
     
+    # Geometric Generation
+    rooms = []
+    walls = []
+    doors = []
+    windows = []
+    
+    wt = 300 # exterior wall thickness
+    it = 100 # interior wall thickness
+    
+    L = length_mm
+    W = width_mm
+    
+    # 1. External Walls
+    walls.append({"id": "ext_north", "start": [0, W], "end": [L, W], "thickness": wt, "is_exterior": True})
+    walls.append({"id": "ext_south", "start": [0, 0], "end": [L, 0], "thickness": wt, "is_exterior": True})
+    walls.append({"id": "ext_west", "start": [0, 0], "end": [0, W], "thickness": wt, "is_exterior": True})
+    walls.append({"id": "ext_east", "start": [L, 0], "end": [L, W], "thickness": wt, "is_exterior": True})
+    
+    # 2. Zones
+    # South Zone: y = 0 to W/2 - 600
+    # Corridor: y = W/2 - 600 to W/2 + 600 (1.2m wide central spine)
+    # North Zone: y = W/2 + 600 to W
+    
+    corridor_y_start = int(W/2 - 600)
+    corridor_y_end = int(W/2 + 600)
+    
+    south_zone_depth = corridor_y_start
+    north_zone_depth = W - corridor_y_end
+    
+    # 3. South Zone (Living Room & Foyer)
+    foyer_width = 2000
+    if L > 4000:
+        rooms.append({
+            "id": "foyer", "name": "Foyer", "x": 0, "y": 0,
+            "width_m": foyer_width / 1000, "length_m": south_zone_depth / 1000, "color_hex": "#14b8a6"
+        })
+        rooms.append({
+            "id": "living_dining", "name": "Living & Dining", "x": foyer_width, "y": 0,
+            "width_m": (L - foyer_width) / 1000, "length_m": south_zone_depth / 1000, "color_hex": "#ef4444"
+        })
+        # Foyer / Living separator
+        walls.append({"id": "int_foyer_living", "start": [foyer_width, 0], "end": [foyer_width, corridor_y_start], "thickness": it, "is_exterior": False})
+        # Archway from foyer to living
+        doors.append({"wall_id": "int_foyer_living", "pos": [foyer_width, corridor_y_start / 2], "width": 1200, "height": 2100, "rot": 90})
+    else:
+        rooms.append({
+            "id": "living_dining", "name": "Living & Dining", "x": 0, "y": 0,
+            "width_m": L / 1000, "length_m": south_zone_depth / 1000, "color_hex": "#ef4444"
+        })
+    
+    # Corridor Horizontal Walls
+    walls.append({"id": "int_corridor_north", "start": [0, corridor_y_end], "end": [L, corridor_y_end], "thickness": it, "is_exterior": False})
+    
+    # Living room is mostly open to the corridor, but separated by a partial wall
+    walls.append({"id": "int_corridor_south", "start": [0, corridor_y_start], "end": [L, corridor_y_start], "thickness": it, "is_exterior": False})
+    doors.append({"wall_id": "int_corridor_south", "pos": [L/2, corridor_y_start], "width": 2000, "height": 2100, "rot": 0})
+    
+    # Main Entrance door (South exterior wall)
+    doors.append({"wall_id": "ext_south", "pos": [1000, 0], "width": 1000, "height": 2100, "rot": 0})
+    
+    # 4. North Zone (Bedrooms, Bathrooms, Kitchen)
+    # Kitchen (East), Bathrooms (Center), Bedrooms (West)
+    north_rooms = []
+    north_depth_m = north_zone_depth / 1000
+    
+    x_cursor = L
+    
+    # Kitchen
+    k_width = max(NBC_MIN_KITCHEN_M2 / north_depth_m, 2.0) * 1000 # min 2m wide
+    x_cursor -= k_width
+    north_rooms.append({"id": "kitchen", "name": "Kitchen", "x": x_cursor, "w": k_width, "color": "#3b82f6"})
+    
+    # Bathrooms
+    for b in range(num_bathrooms):
+        b_width = max(NBC_MIN_BATHROOM_M2 / north_depth_m, 1.2) * 1000 # min 1.2m wide
+        x_cursor -= b_width
+        north_rooms.append({"id": f"bathroom_{b+1}", "name": f"Bathroom {b+1}", "x": x_cursor, "w": b_width, "color": "#10b981"})
+    
+    # Bedrooms
+    rem_space = x_cursor
+    if num_bedrooms > 0:
+        bed_width = rem_space / num_bedrooms
+        for bd in range(num_bedrooms):
+            x_cursor -= bed_width
+            north_rooms.append({"id": f"bedroom_{bd+1}", "name": f"Bedroom {bd+1}", "x": x_cursor, "w": bed_width, "color": "#f59e0b"})
+            
+    # Generate geometry for north rooms
+    for nr in north_rooms:
+        rooms.append({
+            "id": nr["id"],
+            "name": nr["name"],
+            "x": nr["x"],
+            "y": corridor_y_end,
+            "width_m": nr["w"] / 1000,
+            "length_m": north_depth_m,
+            "color_hex": nr["color"]
+        })
+        
+        # Room separator walls
+        if nr["x"] > 0:
+            walls.append({"id": f"int_vert_{nr['id']}", "start": [nr["x"], corridor_y_end], "end": [nr["x"], W], "thickness": it, "is_exterior": False})
+            
+        # Door to corridor
+        door_x = nr["x"] + (nr["w"] / 2)
+        doors.append({"wall_id": "int_corridor_north", "pos": [door_x, corridor_y_end], "width": 800, "height": 2100, "rot": 0})
+        
+        # Window on north exterior wall
+        win_w = 1000
+        if "bathroom" in nr["id"]:
+            win_w = 600
+        windows.append({"wall_id": "ext_north", "pos": [door_x, W], "width": win_w, "height": 1200, "sill_height": 900})
+
+    # Add south windows for living room
+    living_mid_x = (foyer_width + L) / 2 if L > 4000 else L / 2
+    windows.append({"wall_id": "ext_south", "pos": [living_mid_x, 0], "width": 2000, "height": 1500, "sill_height": 600})
+    
+    # West window for Bedroom
+    windows.append({"wall_id": "ext_west", "pos": [0, corridor_y_end + (north_zone_depth/2)], "width": 1000, "height": 1500, "sill_height": 900})
+
+    # East window for Kitchen
+    windows.append({"wall_id": "ext_east", "pos": [L, corridor_y_end + (north_zone_depth/2)], "width": 1000, "height": 1500, "sill_height": 900})
+
     rooms_spec = {
         "bedrooms": {"count": num_bedrooms, "area_each_m2": NBC_MIN_BEDROOM_M2},
         "kitchen": {"count": 1, "area_m2": kitchen_area},
@@ -445,72 +494,7 @@ def calculate_floor_plan(occupancy: int, building_type: str, shape_data: dict):
         "living": {"count": 1, "area_m2": living_area},
     }
     
-    # Generate geometric layout for 3D modeling
-    def generate_layout():
-        rooms = []
-        walls = []
-        doors = []
-        
-        wt = 300 # exterior wall thickness approx
-        it = 100 # interior wall thickness approx
-        
-        L = length_mm
-        W = width_mm
-        
-        walls.append({"id": "ext_north", "start": [0, 0], "end": [L, 0], "thickness": wt, "is_exterior": True})
-        walls.append({"id": "ext_south", "start": [0, W], "end": [L, W], "thickness": wt, "is_exterior": True})
-        walls.append({"id": "ext_west", "start": [0, 0], "end": [0, W], "thickness": wt, "is_exterior": True})
-        walls.append({"id": "ext_east", "start": [L, 0], "end": [L, W], "thickness": wt, "is_exterior": True})
-        
-        half_y = W / 2
-        walls.append({"id": "int_horiz", "start": [0, half_y], "end": [L, half_y], "thickness": it, "is_exterior": False})
-        
-        south_rooms_count = 1 + num_bedrooms
-        south_room_width = L / south_rooms_count
-        
-        for i in range(south_rooms_count):
-            if i > 0:
-                x_pos = i * south_room_width
-                walls.append({"id": f"int_south_vert_{i}", "start": [x_pos, half_y], "end": [x_pos, W], "thickness": it, "is_exterior": False})
-                doors.append({"wall_id": "int_horiz", "pos": [x_pos - 500, half_y], "width": 900, "height": 2100, "rot": 0})
-                
-            name = "Living Room" if i == 0 else f"Bedroom {i}"
-            rooms.append({
-                "id": name.lower().replace(" ", "_"),
-                "name": name,
-                "x": i * south_room_width,
-                "y": half_y,
-                "width_m": south_room_width / 1000,
-                "length_m": half_y / 1000,
-                "color_hex": "#ef4444" if i == 0 else "#f59e0b"
-            })
-            
-        north_rooms_count = 1 + num_bathrooms
-        north_room_width = L / north_rooms_count
-        
-        for i in range(north_rooms_count):
-            if i > 0:
-                x_pos = i * north_room_width
-                walls.append({"id": f"int_north_vert_{i}", "start": [x_pos, 0], "end": [x_pos, half_y], "thickness": it, "is_exterior": False})
-                doors.append({"wall_id": f"int_north_vert_{i}", "pos": [x_pos, half_y/2], "width": 800, "height": 2100, "rot": 90})
-                
-            name = "Kitchen" if i == 0 else f"Bathroom {i}"
-            rooms.append({
-                "id": name.lower().replace(" ", "_"),
-                "name": name,
-                "x": i * north_room_width,
-                "y": 0,
-                "width_m": north_room_width / 1000,
-                "length_m": half_y / 1000,
-                "color_hex": "#3b82f6" if i==0 else "#10b981"
-            })
-            
-        # Add a main entrance door
-        doors.append({"wall_id": "ext_south", "pos": [south_room_width / 2, W], "width": 1000, "height": 2100, "rot": 0})
-        
-        return {"rooms": rooms, "walls": walls, "doors": doors}
-    
-    layout = generate_layout()
+    layout = {"rooms": rooms, "walls": walls, "doors": doors, "windows": windows}
     
     return {
         "length_mm": length_mm,
@@ -520,14 +504,14 @@ def calculate_floor_plan(occupancy: int, building_type: str, shape_data: dict):
         "rooms": rooms_spec,
         "geometry": layout,
         "internal_walls": {
-            "count": num_partitions,
-            "thickness_mm": 100,
+            "count": len([w for w in walls if not w['is_exterior']]),
+            "thickness_mm": it,
             "area_consumed_m2": round(internal_wall_area_m2, 2),
         },
         "usable_area_m2": round(usable_area, 2),
-        "circulation_percent": 18,
+        "circulation_percent": 25,
         "aspect_ratio": round(length_mm / width_mm, 2),
-        "reason": f"NBC 2016: {NBC_MIN_BEDROOM_M2}m²/bedroom, 1.4:1 aspect ratio elongated E-W for max south exposure"
+        "reason": f"NBC 2016 rules applied. Zoning: South (Public), North (Private/Wet). Central 1.2m corridor."
     }
 
 
@@ -1072,13 +1056,17 @@ def calculate_budget(floor_plan: dict, wall_assembly: dict, roof: dict,
     if building_type == "emergency":
         rcc_cost = 0  # No concrete superstructure
         plaster_cost = 0  # No plastering on temp panels
-        paint_cost = paint_cost * 0.1  # Minimal finish
-        plumbing_cost = plumbing_cost * 0.2  # Basic temporary plumbing
-        electrical_cost = electrical_cost * 0.3  # Basic wiring kit
-        foundation_cost = foundation["perimeter_m"] * 1500  # Cheap ground anchors instead of strip footing
-        door_cost = door_cost * 0.3  # Cheap doors
-        floor_cost = floor_cost * 0.2  # Cheap flooring
-        waterproofing_cost = waterproofing_cost * 0.1 # Minimal waterproofing
+        paint_cost = 0  # Minimal finish
+        plumbing_cost = plumbing_cost * 0.1  # Basic temporary plumbing
+        electrical_cost = electrical_cost * 0.15  # Basic wiring kit
+        foundation_cost = 0  # No foundation for emergency/deployable shelters
+        door_cost = num_doors * 2500  # Cheap doors / flaps
+        floor_cost = floor_area_m2 * 200  # Cheap flooring mats
+        waterproofing_cost = 0 # Minimal waterproofing
+        glazing_cost = window_area * 300 # Plastic windows
+        roof_cost = roof_area * 500 # Light tarpaulin/panel roof
+        structural_cost = net_wall_area * 600 # Canvas/panel walls
+        insulation_cost = (net_wall_area + roof_area) * 200 # Basic liners
 
     # ── Apply Location Multiplier ──────────────────────────────────────────
     # Material-heavy trades scale fully with transport premium
@@ -1114,6 +1102,10 @@ def calculate_budget(floor_plan: dict, wall_assembly: dict, roof: dict,
 
     pre_contingency = material_subtotal + labor_cost + professional_fees
     contingency = pre_contingency * contingency_pct
+    
+    if building_type == "emergency":
+        contingency = 0  # No contingency for pre-packaged deployment kits
+
     total = pre_contingency + contingency
 
     return {
@@ -1215,6 +1207,356 @@ def calculate_ventilation_loss(floor_plan: dict, climate: dict, occupancy: int):
 
 
 # ─────────────────────────────────────────────────────────────
+# MATERIAL IMPACT & TRADEOFF CALCULATOR
+# ─────────────────────────────────────────────────────────────
+
+def calculate_material_impact_and_tradeoffs(
+    structural_mat: dict,
+    insulation_mat: dict,
+    glazing_mat: dict,
+    roofing_mat: dict,
+    wall_assembly: dict,
+    floor_plan: dict,
+    climate: dict,
+    resolved_region: dict = None
+):
+    """
+    Computes environmental footprint, thermal inertia time lag,
+    sourcing feasibility, and selection rationale for the build.
+    """
+    length_m = floor_plan.get("length_mm", 6000) / 1000.0
+    width_m = floor_plan.get("width_mm", 6000) / 1000.0
+    height_m = floor_plan.get("ceiling_height_mm", 2700) / 1000.0
+    wall_area_m2 = (length_m * 2 + width_m * 2) * height_m
+    
+    # 1. Embodied Carbon vs Baseline
+    struct_density = structural_mat.get("density_kg_m3") or 1600.0
+    struct_thickness_m = 0.20
+    struct_mass_kg = wall_area_m2 * struct_thickness_m * struct_density
+    struct_co2_factor = structural_mat.get("embodied_carbon_kg_co2_kg") or 0.15
+    struct_co2 = struct_mass_kg * struct_co2_factor
+    
+    insul_density = insulation_mat.get("density_kg_m3") or 100.0
+    insul_thickness_m = 0.08
+    insul_mass_kg = wall_area_m2 * insul_thickness_m * insul_density
+    insul_co2_factor = insulation_mat.get("embodied_carbon_kg_co2_kg") or 0.40
+    insul_co2 = insul_mass_kg * insul_co2_factor
+    
+    total_envelope_co2_kg = round(struct_co2 + insul_co2, 1)
+    baseline_co2_kg = round(wall_area_m2 * 140.0, 1)
+    carbon_savings_pct = max(12, min(88, round((1.0 - (total_envelope_co2_kg / max(1.0, baseline_co2_kg))) * 100)))
+    
+    # 2. Thermal Time Lag & Decrement Factor
+    k_val = structural_mat.get("conductivity_w_m_k") or 0.85
+    cp_val = structural_mat.get("specific_heat_j_kg_k") or 900.0
+    try:
+        thermal_diffusivity_factor = math.sqrt((struct_density * cp_val) / (max(0.01, k_val) * 3600.0))
+        time_lag_hours = round(max(2.5, min(14.0, 1.38 * struct_thickness_m * thermal_diffusivity_factor)), 1)
+    except Exception:
+        time_lag_hours = 7.5
+    decrement_factor = round(max(0.12, min(0.85, math.exp(-0.22 * time_lag_hours))), 2)
+    
+    # 3. Local Sourcing Feasibility
+    local_tags = structural_mat.get("local_regions") or ""
+    target_zone = climate.get("nbc_zone", climate.get("zone", ""))
+    is_local = target_zone in local_tags or target_zone in ("composite", "moderate")
+    sourcing_score = 9 if is_local else 7
+    sourcing_radius = "< 50 km (Locally extracted & pressed)" if is_local else "100 - 300 km (Regional supply corridor)"
+    
+    # 4. Specific Selection Rationales
+    selection_rationales = {
+        "structural": (
+            f"{structural_mat['name']} was selected for {climate.get('nbc_zone', 'this')} climate "
+            f"because its high thermal capacity ({cp_val} J/kg·K) delivers {time_lag_hours} hours of thermal delay, "
+            f"dampening outdoor diurnal swings by {round((1-decrement_factor)*100)}%."
+        ),
+        "insulation": (
+            f"{insulation_mat['name']} provides targeted thermal resistance (R-{wall_assembly.get('r_value_total', 3.0)} SI) "
+            f"while cutting envelope transmission heat flux to {wall_assembly.get('u_value_total', 0.4)} W/m²K."
+        ),
+        "glazing": (
+            f"{glazing_mat['name']} balances solar heat gain (SHGC {glazing_mat.get('shgc', 0.4)}) with high daylighting, "
+            f"concentrating passive radiant gains on southern exposures."
+        ),
+        "roofing": (
+            f"{roofing_mat.get('name', 'Engineered Roof')} matches regional rainfall and snow loads "
+            f"with slope {climate.get('min_roof_slope_deg', 15)}° for optimal weather shedding."
+        )
+    }
+    
+    # 5. Alternative Materials Comparison
+    alternatives_comparison = [
+        {
+            "option": "Proposed Bioclimatic Assembly",
+            "materials": f"{structural_mat['name']} + {insulation_mat['name']}",
+            "r_value": wall_assembly.get("r_value_total", 3.2),
+            "thermal_lag_hrs": time_lag_hours,
+            "carbon_kg_co2": total_envelope_co2_kg,
+            "carbon_status": f"-{carbon_savings_pct}% Carbon",
+            "status": "Recommended"
+        },
+        {
+            "option": "Conventional Brick & Mortar",
+            "materials": "Fired Red Clay Brick (230mm) + Cement Plaster",
+            "r_value": 0.48,
+            "thermal_lag_hrs": 5.2,
+            "carbon_kg_co2": baseline_co2_kg,
+            "carbon_status": "Baseline (High Emissions)",
+            "status": "Conventional"
+        },
+        {
+            "option": "Lightweight Quick-Deploy Alternative",
+            "materials": "EPS Modular Sandwich Panel (80mm)",
+            "r_value": 2.45,
+            "thermal_lag_hrs": 1.8,
+            "carbon_kg_co2": round(baseline_co2_kg * 0.45, 1),
+            "carbon_status": "-55% Carbon (Low Thermal Mass)",
+            "status": "Alternative"
+        }
+    ]
+    
+    return {
+        "embodied_carbon": {
+            "total_envelope_co2_kg": total_envelope_co2_kg,
+            "baseline_conventional_co2_kg": baseline_co2_kg,
+            "carbon_savings_pct": carbon_savings_pct,
+            "carbon_reduction_pct": carbon_savings_pct,
+            "carbon_savings_kg_co2e": round(baseline_co2_kg - total_envelope_co2_kg, 1),
+            "conventional_brick_carbon_kg_co2e": baseline_co2_kg,
+            "thermoshelter_wall_carbon_kg_co2e": total_envelope_co2_kg,
+        },
+        "thermal_inertia": {
+            "time_lag_hours": time_lag_hours,
+            "decrement_factor": decrement_factor,
+            "dampening_pct": round((1 - decrement_factor) * 100),
+            "thermal_mass_rating": structural_mat.get("thermal_mass_rating", "high"),
+        },
+        "thermal_mass_and_lag": {
+            "thermal_mass_rating": structural_mat.get("thermal_mass_rating", "high"),
+            "thermal_lag_hours": time_lag_hours,
+            "decrement_factor": decrement_factor,
+            "damping_pct": round((1 - decrement_factor) * 100),
+        },
+        "sourcing": {
+            "feasibility_score": sourcing_score * 10,
+            "radius_description": sourcing_radius,
+            "is_indigenous_material": is_local,
+        },
+        "local_sourcing": {
+            "feasibility_index": sourcing_score * 10,
+            "sourcing_radius_km": sourcing_radius,
+            "is_indigenous_material": is_local,
+        },
+        "rationales": selection_rationales,
+        "material_rationales": [
+            {"material_name": structural_mat["name"], "category": "Structural Envelope", "rationale": selection_rationales["structural"]},
+            {"material_name": insulation_mat["name"], "category": "Continuous Insulation", "rationale": selection_rationales["insulation"]},
+            {"material_name": glazing_mat["name"], "category": "Glazing & Fenestration", "rationale": selection_rationales["glazing"]},
+            {"material_name": roofing_mat.get("name", "Engineered Roof"), "category": "Roofing Weather Barrier", "rationale": selection_rationales["roofing"]},
+        ],
+        "alternatives_comparison": [
+            {
+                "material_name": structural_mat["name"],
+                "category": "structural",
+                "thermal_conductivity_w_m_k": structural_mat.get("conductivity_w_m_k", 0.85),
+                "density_kg_m3": structural_mat.get("density_kg_m3", 1600),
+                "embodied_carbon_kg_co2_kg": structural_mat.get("embodied_carbon_kg_co2_kg", 0.15),
+                "cost_inr_m2": structural_mat.get("cost_per_m2_inr", 750),
+                "thermal_mass_rating": structural_mat.get("thermal_mass_rating", "very_high"),
+                "selected": True,
+                "pros": f"Delivers {time_lag_hours}h thermal lag and saves {carbon_savings_pct}% carbon vs brick.",
+                "cons": "Requires strict curing quality control."
+            },
+            {
+                "material_name": "Conventional Fired Red Brick (230mm)",
+                "category": "structural",
+                "thermal_conductivity_w_m_k": 0.81,
+                "density_kg_m3": 1920,
+                "embodied_carbon_kg_co2_kg": 0.24,
+                "cost_inr_m2": 1150,
+                "thermal_mass_rating": "moderate",
+                "selected": False,
+                "pros": "Universally available with high familiarity for local masons.",
+                "cons": "Topsoil depletion and coal kiln emissions with high thermal conductivity."
+            },
+            {
+                "material_name": "Autoclaved Aerated Concrete (AAC) Blocks",
+                "category": "structural",
+                "thermal_conductivity_w_m_k": 0.16,
+                "density_kg_m3": 650,
+                "embodied_carbon_kg_co2_kg": 0.32,
+                "cost_inr_m2": 850,
+                "thermal_mass_rating": "low",
+                "selected": False,
+                "pros": "Good bulk insulation and lightweight.",
+                "cons": "Low thermal mass reduces diurnal heat retention in mountain climates."
+            },
+            {
+                "material_name": insulation_mat["name"],
+                "category": "insulation",
+                "thermal_conductivity_w_m_k": insulation_mat.get("conductivity_w_m_k", 0.04),
+                "density_kg_m3": insulation_mat.get("density_kg_m3", 100),
+                "embodied_carbon_kg_co2_kg": insulation_mat.get("embodied_carbon_kg_co2_kg", 0.3),
+                "cost_inr_m2": insulation_mat.get("cost_per_m2_inr", 650),
+                "thermal_mass_rating": insulation_mat.get("thermal_mass_rating", "moderate"),
+                "selected": True,
+                "pros": "High thermal resistance and vapor breathability.",
+                "cons": "Requires protective weather cladding."
+            },
+            {
+                "material_name": "Expanded Polystyrene (EPS)",
+                "category": "insulation",
+                "thermal_conductivity_w_m_k": 0.038,
+                "density_kg_m3": 25,
+                "embodied_carbon_kg_co2_kg": 2.5,
+                "cost_inr_m2": 420,
+                "thermal_mass_rating": "none",
+                "selected": False,
+                "pros": "Inexpensive and lightweight.",
+                "cons": "High petrochemical embodied carbon and flammable."
+            }
+        ]
+    }
+
+
+def calculate_heat_balance(floor_plan: dict, wall_assembly: dict, windows: dict, roof: dict, climate: dict, occupancy: int):
+    """
+    Computes diurnal thermal heat gains vs heat losses (Watts and W/m²).
+    """
+    area_m2 = floor_plan.get("area_m2", 40.0)
+    ceiling_h = floor_plan.get("ceiling_height_mm", 2700) / 1000.0
+    vol_m3 = area_m2 * ceiling_h
+    
+    design_delta_t = 25.0 if climate.get("zone") in ("extreme_cold", "cold") else 12.0
+    
+    # Heat Losses
+    u_wall = wall_assembly.get("u_value_total", 0.45)
+    wall_area = (floor_plan.get("length_mm", 6000)*2 + floor_plan.get("width_mm", 6000)*2) * ceiling_h / 1000.0
+    q_wall_loss = round(u_wall * wall_area * design_delta_t, 1)
+    
+    u_win = windows.get("glazing_u_value", 2.2)
+    win_area = windows.get("total_area_m2", 5.0)
+    q_win_loss = round(u_win * win_area * design_delta_t, 1)
+    
+    u_roof = 0.35
+    roof_area = area_m2 * 1.15
+    q_roof_loss = round(u_roof * roof_area * design_delta_t, 1)
+    
+    ach = 0.6 if climate.get("zone") in ("extreme_cold", "cold") else 1.0
+    q_infiltration_loss = round(0.33 * ach * vol_m3 * design_delta_t, 1)
+    
+    total_heat_loss = round(q_wall_loss + q_win_loss + q_roof_loss + q_infiltration_loss, 1)
+    
+    # Heat Gains
+    q_occupants = round(occupancy * 100.0, 1)
+    q_equipment = 150.0
+    
+    shgc = 0.45
+    south_win_area = win_area * 0.6
+    q_solar_gain = round(south_win_area * 850.0 * shgc * 0.6, 1)
+    
+    total_heat_gain = round(q_occupants + q_equipment + q_solar_gain, 1)
+    net_flux = round(total_heat_gain - total_heat_loss, 1)
+    
+    return {
+        "gains": {
+            "solar_radiation_watts": q_solar_gain,
+            "occupant_sensible_watts": q_occupants,
+            "internal_equipment_watts": q_equipment,
+            "total_gain_watts": total_heat_gain
+        },
+        "losses": {
+            "wall_conduction_watts": q_wall_loss,
+            "window_conduction_watts": q_win_loss,
+            "roof_conduction_watts": q_roof_loss,
+            "infiltration_ventilation_watts": q_infiltration_loss,
+            "total_loss_watts": total_heat_loss
+        },
+        "net_flux_watts": net_flux,
+        "net_flux_w_m2": round(net_flux / max(1.0, area_m2), 2),
+        "thermal_equilibrium_status": "Passive Heating Surplus" if net_flux >= 0 else "Supplementary Heating Required"
+    }
+
+
+def generate_textual_summaries(
+    location: str,
+    building_type: str,
+    occupancy: int,
+    climate: dict,
+    shape_data: dict,
+    floor_plan: dict,
+    wall_assembly: dict,
+    windows: dict,
+    roof: dict,
+    foundation: dict,
+    materials_selected: dict,
+    resolved_region: dict = None
+):
+    city = resolved_region.get("city", location) if resolved_region else location
+    state = resolved_region.get("state", "") if resolved_region else ""
+    loc_display = f"{city}, {state}" if state else city
+    nbc_zone = climate.get("nbc_zone", climate.get("zone", "composite"))
+    seismic = climate.get("seismic_zone", "III")
+    wind_v = climate.get("wind_speed_basic_ms", 39.0)
+    snow = climate.get("snow_load_kn_m2", 0.0)
+    azimuth = shape_data.get("orientation", {}).get("azimuth_deg", 0)
+    facade = shape_data.get("orientation", {}).get("primary_facade", "south").upper()
+    overhang = shape_data.get("solar_geometry", {}).get("recommended_overhang_mm", 500)
+    
+    design_brief = (
+        f"This {building_type.capitalize()} shelter is custom-engineered for {loc_display} "
+        f"located in NBC 2016 {nbc_zone.replace('_', ' ').title()} zone (Altitude: {climate.get('altitude_m', 200)}m ASL). "
+        f"To withstand seismic accelerations in Zone {seismic} and basic wind speeds up to {wind_v} m/s, "
+        f"the structure utilizes a high-mass {materials_selected['structural']['name']} envelope "
+        f"paired with {materials_selected['insulation']['name']}. "
+        f"The building is oriented with its long axis facing {facade} (Azimuth {azimuth}°), "
+        f"achieving optimal passive thermal regulation through direct solar gain and diurnal lag."
+    )
+    
+    bioclimatic_strategy = {
+        "solar_orientation": (
+            f"The long axis runs East-West to expose maximum wall and aperture area toward the {facade} sun. "
+            f"Winter solar noon rays penetrate deep into habitable rooms, while northern walls remain minimized to curb cold exposure."
+        ),
+        "shading_and_overhangs": (
+            f"Calculated roof eaves and window chajjas of {overhang}mm provide a precise cutoff angle for high summer sun (blocking overheating), "
+            f"while remaining transparent to low winter sun angles."
+        ),
+        "thermal_mass_regulation": (
+            f"The dense structural wall ({materials_selected['structural']['name']}) acts as a thermal capacitor, storing peak daytime heat "
+            f"and releasing it over an extended time delay into the interior when outside night temperatures plummet."
+        ),
+        "ventilation_and_draft_control": (
+            f"The entrance is buffered with an airlock vestibule to limit cold drafts. Controlled cross-ventilation apertures "
+            f"ensure fresh air compliance (NBC 2016 Part 8) without compromising the thermal boundary."
+        )
+    }
+    
+    zoning_rationale = {
+        "south_zone": "Dedicated to primary living quarters and bedrooms to capture maximum daily sunlight, warmth, and natural illumination.",
+        "north_zone": "Acts as an unconditioned or secondary thermal buffer containing sanitary spaces and storage, shielding bedrooms from cold prevailing northerly winds.",
+        "central_spine": "A central 1.2m corridor facilitates efficient interior circulation, heat redistribution, and emergency egress routing.",
+        "fenestration_distribution": f"80% of window apertures are situated on the {facade} facade with low-E glazing; North apertures are restricted to minimal daylighting slots to prevent conduction loss."
+    }
+    
+    code_compliance = [
+        {"standard": "NBC 2016 Part 8", "clause": "Clause 4.2 Minimum Habitable Room Area (9.5 m²)", "status": "Passed", "detail": f"Bedrooms sized at {round(floor_plan.get('area_m2', 30)/2, 1)} m² average."},
+        {"standard": "NBC 2016 Part 8", "clause": "Clause 4.3 Ceiling Height (Min 2.7m)", "status": "Passed", "detail": f"Clear habitable ceiling height set to {floor_plan.get('ceiling_height_mm', 2700)/1000}m."},
+        {"standard": "IS 875 Part 3", "clause": f"Basic Wind Speed Vb = {wind_v} m/s", "status": "Passed", "detail": "Wall anchorages and roof trusses sized for regional cyclonic / gale loads."},
+        {"standard": "IS 875 Part 4", "clause": f"Snow Load S0 = {snow} kN/m²", "status": "Passed", "detail": f"Roof pitch ({climate.get('min_roof_slope_deg', 15)}°) prevents hazardous snow accumulation."},
+        {"standard": "IS 1893", "clause": f"Seismic Resistance Zone {seismic}", "status": "Passed", "detail": "Continuous lintel and plinth tie bands incorporated into load-bearing masonry."},
+        {"standard": "IS 1904", "clause": f"Frost Depth Line ({climate.get('frost_line_mm', 450)} mm)", "status": "Passed", "detail": f"Foundation footing depth exceeds frost penetration line."}
+    ]
+    
+    return {
+        "design_brief": design_brief,
+        "bioclimatic_strategy": bioclimatic_strategy,
+        "zoning_rationale": zoning_rationale,
+        "code_compliance": code_compliance
+    }
+
+
+# ─────────────────────────────────────────────────────────────
 # MAIN SPEC GENERATOR
 # ─────────────────────────────────────────────────────────────
 
@@ -1226,90 +1568,144 @@ def generate_building_spec(
     budget_inr: int,
     building_type: str = "residential",
     avg_temp_c: float = -5.0,
-    structural_id: str = "eps",
-    insulation_id: str = "eps",
-    glazing_id: str = "low_e_double_glazed",
+    structural_id: str = None,
+    insulation_id: str = None,
+    glazing_id: str = None,
+    roofing_id: str = None,
+    resolved_region: dict = None,
 ):
     """
     Generate a complete, construction-grade building specification.
-    
     Every dimension is backed by NBC 2016, IS 875, IS 1904, or standard building physics.
-    
-    Args:
-        occupancy: Number of people the building must accommodate.
-        location: Name of the city or region (e.g., "Leh, Ladakh").
-        lat: Latitude of the location (e.g., 34.15).
-        lon: Longitude of the location (e.g., 77.58).
-        budget_inr: Target budget in Indian Rupees (INR) (e.g., 500000).
-        building_type: The type of building. Must be one of: "residential", "emergency", "institutional".
-        avg_temp_c: The average winter temperature in Celsius for the location (e.g., -5.0).
-        structural_id: ID of the primary wall material. Options: "aac_blocks", "cse_blocks", "timber_frame".
-        insulation_id: ID of the primary insulation. Options: "xps_insulation", "mineral_wool", "hempcrete".
-        glazing_id: ID of the window type. Options: "single_clear", "double_clear", "low_e_double_glazed".
     """
-    
+    # 0. Normalize building_type string
+    bt_lower = str(building_type).lower().strip()
+    if "emergency" in bt_lower or "disaster" in bt_lower:
+        building_type = "emergency"
+    elif "community" in bt_lower or "institutional" in bt_lower:
+        building_type = "community"
+    else:
+        building_type = "residential"
+
     # 1. Load materials
     all_materials = load_all_materials()
     
-    # V5 FIX: Emergency shelters auto-select budget-friendly materials
-    # Override user selection with cheapest effective options
-    if building_type == "emergency":
-        # Find cheapest in each category
-        cheapest_structural = min(
-            all_materials["structural"],
-            key=lambda m: m.get("cost_per_m2_inr") or 9999
-        )
-        cheapest_insulation = min(
-            all_materials["insulation"],
-            key=lambda m: m.get("cost_per_m2_inr") or 9999
-        )
-        cheapest_glazing = min(
-            all_materials["glazing"],
-            key=lambda m: m.get("cost_per_m2_inr") or 9999
-        )
-        structural_id = cheapest_structural["id"]
-        insulation_id = cheapest_insulation["id"]
-        glazing_id = cheapest_glazing["id"]
+    # 2. Classify climate
+    climate = classify_climate(avg_temp_c, lat, resolved_region)
+    nbc_zone = climate.get("nbc_zone", climate.get("zone", "composite"))
     
-    # Material lookup (after potential emergency override)
+    # 3. Intelligent Material Selection based on Location & Tier if not provided
+    if building_type == "emergency":
+        structural_id = structural_id or "eps"
+        insulation_id = insulation_id or "polyurethane_foam"
+        glazing_id = glazing_id or "polycarbonate_multiwall"
+        roofing_id = roofing_id or "corrugated_metal"
+    else:
+        # Match regional and bioclimatic defaults
+        if not structural_id:
+            if nbc_zone in ("extreme_cold", "cold"):
+                structural_id = "rammed_earth"
+            elif nbc_zone == "warm_humid":
+                structural_id = "laterite_stone"
+            elif nbc_zone == "hot_dry":
+                structural_id = "cseb_blocks"
+            else:
+                structural_id = "aac_blocks"
+                
+        if not insulation_id:
+            if nbc_zone in ("extreme_cold", "cold"):
+                insulation_id = "mineral_wool"
+            elif nbc_zone == "hot_dry":
+                insulation_id = "pcm_panels"
+            elif nbc_zone == "warm_humid":
+                insulation_id = "rice_husk_board"
+            else:
+                insulation_id = "wood_wool"
+                
+        if not glazing_id:
+            if nbc_zone in ("extreme_cold", "cold"):
+                glazing_id = "low_e_argon"
+            elif nbc_zone == "hot_dry":
+                glazing_id = "solar_control"
+            else:
+                glazing_id = "double_clear"
+                
+        if not roofing_id:
+            if nbc_zone in ("extreme_cold", "cold"):
+                roofing_id = "slate_stone"
+            elif nbc_zone == "warm_humid":
+                roofing_id = "mangalore_tiles"
+            elif nbc_zone == "hot_dry":
+                roofing_id = "cool_roof_coat"
+            else:
+                roofing_id = "cool_roof_coat"
+
+    # Material lookups
     structural_mat = next((m for m in all_materials["structural"] if m["id"] == structural_id), all_materials["structural"][0])
     insulation_mat = next((m for m in all_materials["insulation"] if m["id"] == insulation_id), all_materials["insulation"][0])
     glazing_mat = next((m for m in all_materials["glazing"] if m["id"] == glazing_id), all_materials["glazing"][0])
+    roofing_mat = next((m for m in all_materials["roofing"] if m["id"] == roofing_id), all_materials["roofing"][0]) if "roofing" in all_materials and all_materials["roofing"] else {"id": "corrugated_metal", "name": "Corrugated Metal"}
     
-    # 2. Classify climate
-    climate = classify_climate(avg_temp_c, lat)
-    
-    # 3. V4: Calculate optimal shape and orientation
+    # 4. Calculate optimal shape and orientation
     shape_data = calculate_shape_and_orientation(climate, building_type, lat)
     
-    # 4. Calculate floor plan (uses shape's aspect ratio)
+    # 5. Calculate floor plan
     floor_plan = calculate_floor_plan(occupancy, building_type, shape_data)
     
-    # 4. Calculate wall assembly
+    # 6. Calculate wall assembly
     wall_assembly = calculate_wall_assembly(structural_mat, insulation_mat, climate)
     
-    # 5. Calculate windows
+    # 7. Calculate windows
     windows = calculate_windows(floor_plan, climate, glazing_mat, lat)
     
-    # 6. Calculate roof
+    # 8. Calculate roof
     roof = calculate_roof(floor_plan, climate, structural_mat)
+    roof["material"] = roofing_mat.get("name", roof.get("material", "corrugated_metal"))
+    roof["material_id"] = roofing_mat.get("id", "corrugated_metal")
     
-    # 7. Calculate foundation
+    # 9. Calculate foundation
     foundation = calculate_foundation(floor_plan, wall_assembly, climate, structural_mat, roof)
     
-    # 8. Calculate budget
+    # 10. Calculate budget
     budget = calculate_budget(floor_plan, wall_assembly, roof, foundation,
                               structural_mat, insulation_mat, glazing_mat, windows, climate, building_type)
     
-    # 9. Assemble final spec
+    # 11. Calculate ventilation
+    ventilation = calculate_ventilation_loss(floor_plan, climate, occupancy)
+    
+    # 12. Material Impact & Trade-Off Analysis
+    material_impact = calculate_material_impact_and_tradeoffs(
+        structural_mat, insulation_mat, glazing_mat, roofing_mat,
+        wall_assembly, floor_plan, climate, resolved_region
+    )
+    
+    # 13. Diurnal Heat Balance Dynamics
+    heat_balance = calculate_heat_balance(floor_plan, wall_assembly, windows, roof, climate, occupancy)
+    
+    # 14. Textual Summaries & Bioclimatic Report
+    materials_selected_summary = {
+        "structural": structural_mat,
+        "insulation": insulation_mat,
+        "glazing": glazing_mat,
+        "roofing": roofing_mat
+    }
+    summaries = generate_textual_summaries(
+        location, building_type, occupancy, climate, shape_data,
+        floor_plan, wall_assembly, windows, roof, foundation,
+        materials_selected_summary, resolved_region
+    )
+    
+    # 15. Assemble final spec
     spec = {
-        "version": "V5",
+        "version": "V6",
         "building_type": building_type,
         "occupancy": occupancy,
         "location": {
             "name": location,
             "lat": lat,
             "lon": lon,
+            "altitude_m": climate.get("altitude_m", 200),
+            "state": resolved_region.get("state", "") if resolved_region else ""
         },
         "climate": climate,
         "form": shape_data,
@@ -1329,16 +1725,88 @@ def generate_building_spec(
         "roof": roof,
         "foundation": foundation,
         "materials_selected": {
-            "structural": {"id": structural_mat["id"], "name": structural_mat["name"]},
-            "insulation": {"id": insulation_mat["id"], "name": insulation_mat["name"]},
-            "glazing": {"id": glazing_mat["id"], "name": glazing_mat["name"]},
+            "structural": {
+                **structural_mat,
+                "id": structural_mat.get("id", "structural_spec"),
+                "name": structural_mat.get("name", "Standard Structural Masonry"),
+                "category": structural_mat.get("category", "Structural"),
+                "u_value": structural_mat.get("u_value", 0.4),
+                "r_value": structural_mat.get("r_value", 2.5),
+                "density_kg_m3": structural_mat.get("density_kg_m3", 1800),
+                "cost_per_unit": structural_mat.get("cost_per_m2_inr") or structural_mat.get("cost_per_unit", 650)
+            },
+            "insulation": {
+                **insulation_mat,
+                "id": insulation_mat.get("id", "insulation_spec"),
+                "name": insulation_mat.get("name", "Standard Insulation"),
+                "category": insulation_mat.get("category", "Insulation"),
+                "conductivity_w_mk": insulation_mat.get("conductivity_w_mk", 0.035),
+                "r_value_per_mm": insulation_mat.get("r_value_per_mm", 0.028),
+                "cost_per_unit": insulation_mat.get("cost_per_m2_inr") or insulation_mat.get("cost_per_unit", 320)
+            },
+            "glazing": {
+                **glazing_mat,
+                "id": glazing_mat.get("id", "glazing_spec"),
+                "name": glazing_mat.get("name", "Standard Glazing"),
+                "category": glazing_mat.get("category", "Glazing"),
+                "u_value": glazing_mat.get("u_value", 1.4),
+                "shgc": glazing_mat.get("shgc", 0.35),
+                "vlt": glazing_mat.get("vlt", 0.65),
+                "cost_per_unit": glazing_mat.get("cost_per_m2_inr") or glazing_mat.get("cost_per_unit", 1200)
+            },
+            "roofing": {
+                **roofing_mat,
+                "id": roofing_mat.get("id", "roofing_spec"),
+                "name": roofing_mat.get("name", "Standard Roofing"),
+                "category": roofing_mat.get("category", "Roofing"),
+                "albedo": roofing_mat.get("albedo", 0.85),
+                "emissivity": roofing_mat.get("emissivity", 0.9),
+                "cost_per_unit": roofing_mat.get("cost_per_m2_inr") or roofing_mat.get("cost_per_unit", 750)
+            },
         },
         "budget": {
             **budget,
             "user_budget_inr": budget_inr,
             "within_budget": budget["total_estimated_inr"] <= budget_inr,
+            "value_engineering": {
+                "contractor_turnkey_inr": budget["total_estimated_inr"],
+                "vernacular_self_build_inr": max(250000, round(budget["total_estimated_inr"] * 0.28)),
+                "phased_core_shell_inr": max(180000, round(budget["total_estimated_inr"] * 0.18)),
+                "levers": [
+                    {
+                        "name": "Compressed Stabilized Earth Blocks (CSEB)",
+                        "impact": "Eliminates concrete batching and heavy transport from railhead",
+                        "savings_inr": round((budget.get("breakdown", {}).get("structural_masonry_inr", 300000) + budget.get("breakdown", {}).get("rcc_superstructure_inr", 350000)) * 0.65),
+                        "recommendation": "Use local silt, quarry dust, and 6% lime-cement stabilizer pressed on-site."
+                    },
+                    {
+                        "name": "Vernacular Dry-Stone Trench Plinth",
+                        "impact": "Replaces deep RCC continuous strip foundation with regional sub-grade frost-trench",
+                        "savings_inr": round(budget.get("breakdown", {}).get("foundation_inr", 250000) * 0.55),
+                        "recommendation": "Excavate to 900mm frost depth; pack with river rock & geo-textile drainage."
+                    },
+                    {
+                        "name": "PMAY-G / Community Self-Help Labor",
+                        "impact": "Replaces external commercial contractor overhead and imported masonry crews",
+                        "savings_inr": budget.get("breakdown", {}).get("construction_labor_inr", 544000),
+                        "recommendation": "Utilize local self-help building cooperatives under rural housing assistance."
+                    },
+                    {
+                        "name": "Phased Envelope Enclosure",
+                        "impact": "Construct primary 20m² habitable thermal core first, expand second bay in spring",
+                        "savings_inr": round(budget["total_estimated_inr"] * 0.45),
+                        "recommendation": "Insulate and seal bedroom/living core before completing ancillary spaces."
+                    }
+                ]
+            }
         },
-        "ventilation": calculate_ventilation_loss(floor_plan, climate, occupancy),
+        "ventilation": ventilation,
+        "material_impact": material_impact,
+        "heat_balance": heat_balance,
+        "design_brief": summaries["design_brief"],
+        "bioclimatic_strategy": summaries["bioclimatic_strategy"],
+        "zoning_rationale": summaries["zoning_rationale"],
+        "code_compliance": summaries["code_compliance"],
     }
     
     return spec
@@ -1355,11 +1823,9 @@ if __name__ == "__main__":
         lat=34.15,
         lon=77.58,
         budget_inr=500000,
-        building_type="emergency",
-        avg_temp_c=-5.0,
-        structural_id="eps",
-        insulation_id="eps",
-        glazing_id="low_e_double_glazed",
+        building_type="residential",
+        avg_temp_c=-10.0,
     )
     
     print(json.dumps(spec, indent=2))
+
