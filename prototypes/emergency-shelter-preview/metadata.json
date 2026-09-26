@@ -1,0 +1,6 @@
+{
+  "name": "Aegis-24 Emergency Thermal Shelter 3D Model",
+  "description": "Production-grade 3D architectural visualizer and engineering model for the 24 m² Emergency Rapid-Deployment Thermal Shelter with LGSF framing and insulated composite envelope.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

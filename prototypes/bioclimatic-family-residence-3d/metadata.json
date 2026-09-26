@@ -1,0 +1,6 @@
+{
+  "name": "Bioclimatic Family Residence 3D",
+  "description": "Interactive photorealistic 3D architectural model and bioclimatic solar study of a permanent family residence with central courtyard, rammed earth, and passive thermal cooling.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

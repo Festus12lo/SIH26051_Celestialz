@@ -1,0 +1,6 @@
+{
+  "name": "Terran Bioclimatic Apartment",
+  "description": "Interactive 3D passive residential building visualizer with solar geometry, thermal mass analysis, natural ventilation, and bioclimatic architecture.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
