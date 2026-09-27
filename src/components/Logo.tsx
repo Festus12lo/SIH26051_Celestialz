@@ -25,7 +25,7 @@ export default function Logo({
   const src =
     theme === 'light'
       ? '/images/thermoshelter_logo.png'
-      : '/images/thermoshelter_logo_transparent.png';
+      : '/images/thermoshelter_header_logo.png';
 
   if (variant === 'icon-only') {
     return (
