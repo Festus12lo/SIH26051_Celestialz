@@ -229,6 +229,10 @@ export const FloorplanPage: React.FC = () => {
                 <img
                   src={current3DImage}
                   alt="3D Photorealistic Architectural Render"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = defaultFallback3D;
+                  }}
                   className="max-h-[490px] w-auto object-contain rounded-xl shadow-2xl transition-transform duration-500 group-hover:scale-[1.01]"
                 />
                 <button
@@ -300,6 +304,10 @@ export const FloorplanPage: React.FC = () => {
             <img
               src={current3DImage}
               alt="3D Photorealistic Architectural Render"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = defaultFallback3D;
+              }}
               className="max-h-[85vh] w-auto object-contain rounded-2xl border border-white/10 shadow-2xl"
             />
             <div className="mt-3 text-center text-xs font-mono text-white/60">

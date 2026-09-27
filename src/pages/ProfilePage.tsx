@@ -58,6 +58,8 @@ export default function ProfilePage() {
     (p) => p.providerId === 'google.com'
   );
 
+  const [avatarError, setAvatarError] = useState(false);
+
   const settingsItems = [
     {
       icon: <Palette size={18} />,
@@ -98,10 +100,11 @@ export default function ProfilePage() {
         <div className="glass-card-premium rounded-[2rem] p-8 text-center">
           {/* Avatar */}
           <div className="mx-auto mb-5 relative w-24 h-24">
-            {photoURL ? (
+            {photoURL && !avatarError ? (
               <img
                 src={photoURL}
                 alt={displayName}
+                onError={() => setAvatarError(true)}
                 className="w-24 h-24 rounded-full border-2 border-white/20 object-cover shadow-xl"
                 referrerPolicy="no-referrer"
               />

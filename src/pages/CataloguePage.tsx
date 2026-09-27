@@ -22,43 +22,49 @@ interface MaterialsData {
   roofing: Material[];
 }
 
+import defaultMaterialsData from '../data/materials.json';
+
 export default function CataloguePage() {
-  const [materials, setMaterials] = useState<MaterialsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [materials, setMaterials] = useState<MaterialsData>(() => {
+    try {
+      const cached = localStorage.getItem('thermoshelter_materials_cache');
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return defaultMaterialsData as unknown as MaterialsData;
+  });
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'structural' | 'insulation' | 'glazing' | 'roofing'>('structural');
   const [tierFilter, setTierFilter] = useState<'all' | 'emergency' | 'community' | 'permanent'>('all');
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
-  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('thermoshelter_favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
-    const cached = localStorage.getItem('thermoshelter_materials_cache');
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
     
+    // Attempt background sync if backend is active
     fetch(`${API_BASE_URL}/api/materials?t=` + new Date().getTime(), { cache: 'no-store' })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
-        if (data.status === 'success') {
+        if (data.status === 'success' && data.materials) {
           setMaterials(data.materials);
           localStorage.setItem('thermoshelter_materials_cache', JSON.stringify(data.materials));
-        } else {
-          throw new Error('Failed to load materials data from API.');
         }
       })
       .catch(err => {
-        console.error("Fetch failed, falling back to cache if available:", err);
-        if (cached) {
-          setMaterials(JSON.parse(cached));
-        } else {
-          setError('Error fetching materials and no offline cache available.');
-        }
-      })
-      .finally(() => setIsLoading(false));
-      
-    const savedFavorites = localStorage.getItem('thermoshelter_favorites');
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites));
-    }
+        // Safe to ignore when deployed statically or backend is offline
+        console.info("Using embedded architectural materials library:", err.message);
+      });
   }, []);
 
   const toggleFavorite = (id: string, e: React.MouseEvent) => {
@@ -187,6 +193,10 @@ export default function CataloguePage() {
               <img 
                 src={mat.image_url || getDummyImage(activeTab, mat.name, mat.id)} 
                 alt={mat.name} 
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = getDummyImage(activeTab, mat.name, mat.id);
+                }}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out opacity-80 group-hover:opacity-100" 
               />
               <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-white uppercase tracking-wider border border-white/10">
@@ -256,6 +266,10 @@ export default function CataloguePage() {
               <img 
                 src={selectedMaterial.image_url || getDummyImage(activeTab, selectedMaterial.name, selectedMaterial.id)} 
                 alt={selectedMaterial.name} 
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = getDummyImage(activeTab, selectedMaterial.name, selectedMaterial.id);
+                }}
                 className="w-full h-full object-cover" 
               />
               <button 

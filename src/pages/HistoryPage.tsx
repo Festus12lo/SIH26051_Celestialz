@@ -109,7 +109,15 @@ export default function HistoryPage() {
                 {/* Thumbnail */}
                 <div className="h-48 w-full bg-black/60 relative overflow-hidden border-b border-white/10">
                   {imageUrl ? (
-                    <img src={imageUrl} alt={type} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500 group-hover:scale-105" />
+                    <img 
+                      src={imageUrl} 
+                      alt={type} 
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = '/emergency_house.jpg';
+                      }}
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500 group-hover:scale-105" 
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-white/20">
                       <Layers size={48} />

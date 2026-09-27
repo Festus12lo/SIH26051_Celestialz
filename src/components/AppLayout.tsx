@@ -29,6 +29,7 @@ export const AppLayout: React.FC = () => {
   const [rateLimitHit, setRateLimitHit] = useState(false);
   const { currentUser } = useAuth();
   const notifRef = useRef<HTMLDivElement>(null);
+  const [avatarFailed, setAvatarFailed] = useState(false);
 
   // Track read/unread notifications
   const [notifications, setNotifications] = useState([
@@ -220,10 +221,11 @@ export const AppLayout: React.FC = () => {
               className="p-1 bg-black/40 backdrop-blur-md rounded-xl border border-white/10 text-white hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-center"
               title="Your Profile"
             >
-              {currentUser?.photoURL ? (
+              {currentUser?.photoURL && !avatarFailed ? (
                 <img
                   src={currentUser.photoURL}
                   alt="Profile"
+                  onError={() => setAvatarFailed(true)}
                   className="w-10 h-10 rounded-lg object-cover"
                   referrerPolicy="no-referrer"
                 />
