@@ -1,8 +1,11 @@
 import os
 import json
 import httpx
-from google import genai
 from dotenv import load_dotenv
+try:
+    from google import genai
+except ImportError:
+    genai = None
 import logging
 
 # Configure logger
@@ -51,7 +54,7 @@ class LLMPipeline:
         """Generate a text response with fallbacks."""
         # 1. Try Gemini
         last_error = None
-        for key in self.gemini_keys:
+        for key in (self.gemini_keys if genai else []):
             client = genai.Client(api_key=key)
             for model_name in GEMINI_MODELS:
                 try:
@@ -175,7 +178,7 @@ class LLMPipeline:
                 logger.warning(f"[LLMPipeline] Nvidia JSON failed: {e}")
 
         # 2. Try Gemini
-        for key in self.gemini_keys:
+        for key in (self.gemini_keys if genai else []):
             client = genai.Client(api_key=key)
             for model_name in GEMINI_MODELS:
                 try:
@@ -257,7 +260,7 @@ class LLMPipeline:
         history is expected to be a list of dicts: [{"role": "user"|"assistant", "content": "..."}]
         """
         last_error = None
-        for key in self.gemini_keys:
+        for key in (self.gemini_keys if genai else []):
             client = genai.Client(api_key=key)
             gemini_history = []
             for msg in history[:-1]:
@@ -355,7 +358,7 @@ class LLMPipeline:
         history is expected to be a list of dicts: [{"role": "user"|"assistant", "content": "..."}]
         """
         last_error = None
-        for key in self.gemini_keys:
+        for key in (self.gemini_keys if genai else []):
             client = genai.Client(api_key=key)
             gemini_history = []
             for msg in history[:-1]:

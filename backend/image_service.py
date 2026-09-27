@@ -10,8 +10,12 @@ import httpx
 import base64
 from dotenv import load_dotenv
 import asyncio
-from google import genai
-from google.genai import types
+try:
+    from google import genai
+    from google.genai import types
+except ImportError:
+    genai = None
+    types = None
 
 load_dotenv()
 
@@ -56,7 +60,7 @@ async def generate_image_url(prompt: str, injected_keys: dict = None) -> str:
 
     # ── 2. GEMINI 3.1 FLASH IMAGE - Fallback 1 ──
     gemini_key = (injected_keys.get("gemini") if injected_keys else None) or os.getenv("GEMINI_API_KEY")
-    if gemini_key and gemini_key.strip():
+    if genai and gemini_key and gemini_key.strip():
         print(f"[ImageService] Found Gemini API key. Attempting Gemini 3.1 Flash Image generation...")
         try:
             client = genai.Client(api_key=gemini_key.strip())
