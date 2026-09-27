@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Key, Terminal, AlertCircle } from 'lucide-react';
 import { getApiKey, setApiKey } from '../utils/keyStore';
+import { API_BASE_URL } from '../api/config';
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -39,7 +40,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
   const fetchLogs = async () => {
     setIsFetchingLogs(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
       const res = await fetch(`${API_BASE_URL}/api/logs`);
       const data = await res.json();
       setLogs(data.logs || []);

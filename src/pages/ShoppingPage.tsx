@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../App';
 import { ShoppingCart, ExternalLink, ShieldCheck, TrendingDown, ArrowLeft, Package, Sparkles, Check, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../api/config';
 
 interface Supplier {
   name: string;
@@ -80,7 +81,6 @@ export default function ShoppingPage() {
           }));
         }
 
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
         let dbMaterials: any[] = [];
         try {
           const res = await fetch(`${API_BASE_URL}/api/materials`);

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Package, ThermometerSun, IndianRupee, Layers, Shield, Droplets, X } from 'lucide-react';
+import { API_BASE_URL } from '../api/config';
 
 interface Material {
   id: string;
@@ -47,8 +48,6 @@ export default function CataloguePage() {
   });
 
   useEffect(() => {
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-    
     // Attempt background sync if backend is active
     fetch(`${API_BASE_URL}/api/materials?t=` + new Date().getTime(), { cache: 'no-store' })
       .then(res => {

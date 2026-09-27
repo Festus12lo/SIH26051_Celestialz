@@ -1,4 +1,5 @@
 import { getApiKey } from '../utils/keyStore';
+import { API_BASE_URL } from './config';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -14,7 +15,6 @@ export const chatWithArchitect = async (
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
 
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
     const response = await fetch(`${API_BASE_URL}/api/llm/chat`, {
       method: 'POST',
       headers: { 
@@ -129,7 +129,6 @@ export const generateBlueprint = async (
   shelterType?: string
 ): Promise<any> => {
   try {
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
     const response = await fetch(`${API_BASE_URL}/api/llm/parse-requirements`, {
       method: 'POST',
       headers: { 

@@ -1,6 +1,5 @@
 import type { ThermalTelemetryData } from '../components/simulation/ThermalPhysicsTelemetryCard';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import { API_BASE_URL } from './config';
 
 export async function fetchLiveSimulationTelemetry(
   lat: number = 34.1526,

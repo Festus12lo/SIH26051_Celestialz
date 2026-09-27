@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { API_BASE_URL } from '../api/config';
 
 interface LocationSuggestion {
   city: string;
@@ -29,7 +30,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+  const BACKEND_URL = API_BASE_URL;
 
   // Debounced autocomplete fetch
   const fetchSuggestions = useCallback(async (q: string) => {

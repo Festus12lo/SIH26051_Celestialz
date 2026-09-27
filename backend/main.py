@@ -49,9 +49,16 @@ ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()] if _
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+]
+
+# Guarantee production origins are always present regardless of env overrides
+_required_origins = [
     "https://thermoshelter.vercel.app",
     "https://sih26051celestialz-production.up.railway.app",
 ]
+for origin in _required_origins:
+    if origin not in ALLOWED_ORIGINS:
+        ALLOWED_ORIGINS.append(origin)
 
 app.add_middleware(
     CORSMiddleware,
@@ -67,8 +74,9 @@ def read_root():
     return {"message": "ThermoShelter API is running"}
 
 @app.get("/health")
+@app.get("/api/health")
 def health_check():
-    return {"status": "healthy", "service": "thermoshelter-backend"}
+    return {"status": "healthy", "service": "thermoshelter-backend", "version": "2.1.0"}
 
 from fastapi.responses import StreamingResponse
 from llm import parse_requirements_with_llm, generate_rationale_with_llm, generate_chat_response_with_llm, generate_chat_stream_with_llm
