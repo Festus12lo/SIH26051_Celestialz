@@ -111,7 +111,13 @@ async def autocomplete_city(query: str, country_code: str = "in") -> list:
 # ─────────────────────────────────────────────────────────────
 
 def _get_db_connection():
-    return psycopg2.connect(DATABASE_URL)
+    if not DATABASE_URL:
+        return None
+    try:
+        return psycopg2.connect(DATABASE_URL)
+    except Exception as e:
+        print(f"[GeoService] Warning: Could not connect to database ({e}). Using offline climate defaults.")
+        return None
 
 
 def lookup_climate_region(city: str, state: str = None, lat: float = None, lon: float = None) -> dict:
@@ -125,32 +131,42 @@ def lookup_climate_region(city: str, state: str = None, lat: float = None, lon: 
     4. Fallback defaults
     """
     conn = _get_db_connection()
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    
-    # Strategy 1: Exact city match
-    cursor.execute(
-        "SELECT * FROM climate_regions WHERE LOWER(city) = LOWER(%s) LIMIT 1",
-        (city,)
-    )
-    row = cursor.fetchone()
-    
-    # Strategy 2: State match
-    if not row and state:
+    if not conn:
+        return _default_region(city, lat, lon)
+
+    row = None
+    try:
+        cursor = conn.cursor(cursor_factory=DictCursor)
+        
+        # Strategy 1: Exact city match
         cursor.execute(
-            "SELECT * FROM climate_regions WHERE LOWER(state) = LOWER(%s) LIMIT 1",
-            (state,)
+            "SELECT * FROM climate_regions WHERE LOWER(city) = LOWER(%s) LIMIT 1",
+            (city,)
         )
         row = cursor.fetchone()
-    
-    # Strategy 3: Nearest by lat/lon
-    if not row and lat is not None and lon is not None:
-        cursor.execute("SELECT * FROM climate_regions")
-        all_regions = cursor.fetchall()
-        if all_regions:
-            nearest = min(all_regions, key=lambda r: _haversine(lat, lon, r["lat"], r["lon"]))
-            row = nearest
-    
-    conn.close()
+        
+        # Strategy 2: State match
+        if not row and state:
+            cursor.execute(
+                "SELECT * FROM climate_regions WHERE LOWER(state) = LOWER(%s) LIMIT 1",
+                (state,)
+            )
+            row = cursor.fetchone()
+        
+        # Strategy 3: Nearest by lat/lon
+        if not row and lat is not None and lon is not None:
+            cursor.execute("SELECT * FROM climate_regions")
+            all_regions = cursor.fetchall()
+            if all_regions:
+                nearest = min(all_regions, key=lambda r: _haversine(lat, lon, r["lat"], r["lon"]))
+                row = nearest
+    except Exception as e:
+        print(f"[GeoService] Warning: Climate region query failed ({e}). Using default region.")
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
     
     if row:
         return dict(row)
@@ -215,9 +231,6 @@ def lookup_prompt_style(nbc_zone: str, building_type: str) -> dict:
     Get the prompt style rules for a given NBC zone + building type.
     Falls back to 'residential' if building_type not found, then to 'composite' zone.
     """
-    conn = _get_db_connection()
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    
     # Normalize building_type
     bt = building_type.lower().strip()
     if bt in ("community", "institutional"):
@@ -228,30 +241,47 @@ def lookup_prompt_style(nbc_zone: str, building_type: str) -> dict:
         bt = "emergency"
     else:
         bt = "residential"
-    
-    # Try exact match
-    cursor.execute(
-        "SELECT * FROM prompt_style_rules WHERE nbc_zone = %s AND building_type = %s LIMIT 1",
-        (nbc_zone, bt)
-    )
-    row = cursor.fetchone()
-    
-    # Fallback to residential in same zone
-    if not row:
+
+    conn = _get_db_connection()
+    if not conn:
+        return {
+            "style_2d": "Professional architectural blueprint, top-down orthographic, dimension lines in meters, room labels, north arrow",
+            "style_3d": "Isometric cutaway 3D architectural rendering, partially removed roof showing interior layout",
+            "negative_prompt": "luxury, mansion, fantasy, cartoon",
+            "environment_desc": f"Indian {nbc_zone} landscape appropriate to the region",
+        }
+
+    row = None
+    try:
+        cursor = conn.cursor(cursor_factory=DictCursor)
+        # Try exact match
         cursor.execute(
-            "SELECT * FROM prompt_style_rules WHERE nbc_zone = %s AND building_type = 'residential' LIMIT 1",
-            (nbc_zone,)
+            "SELECT * FROM prompt_style_rules WHERE nbc_zone = %s AND building_type = %s LIMIT 1",
+            (nbc_zone, bt)
         )
         row = cursor.fetchone()
-    
-    # Fallback to composite residential
-    if not row:
-        cursor.execute(
-            "SELECT * FROM prompt_style_rules WHERE nbc_zone = 'composite' AND building_type = 'residential' LIMIT 1"
-        )
-        row = cursor.fetchone()
-    
-    conn.close()
+        
+        # Fallback to residential in same zone
+        if not row:
+            cursor.execute(
+                "SELECT * FROM prompt_style_rules WHERE nbc_zone = %s AND building_type = 'residential' LIMIT 1",
+                (nbc_zone,)
+            )
+            row = cursor.fetchone()
+        
+        # Fallback to composite residential
+        if not row:
+            cursor.execute(
+                "SELECT * FROM prompt_style_rules WHERE nbc_zone = 'composite' AND building_type = 'residential' LIMIT 1"
+            )
+            row = cursor.fetchone()
+    except Exception as e:
+        print(f"[GeoService] Warning: Prompt style query failed ({e}).")
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
     
     if row:
         return dict(row)

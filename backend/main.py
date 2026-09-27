@@ -64,6 +64,10 @@ app.add_middleware(
 def read_root():
     return {"message": "ThermoShelter API is running"}
 
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "service": "thermoshelter-backend"}
+
 from fastapi.responses import StreamingResponse
 from llm import parse_requirements_with_llm, generate_rationale_with_llm, generate_chat_response_with_llm, generate_chat_stream_with_llm
 from spec_generator import load_all_materials

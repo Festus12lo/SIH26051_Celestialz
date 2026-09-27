@@ -5,25 +5,57 @@ from procurement_engine import ProcurementEngine
 import sys
 import os
 
-try:
-    from thermoshelter.models.model_a_envelope import ModelA_EnvelopeSelector
-except ImportError:
-    try:
-        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-        from thermoshelter.models.model_a_envelope import ModelA_EnvelopeSelector
-    except ImportError:
-        ModelA_EnvelopeSelector = None
+# Comprehensive assembly-to-material ID mapping to ensure zero external import dependencies
+ASSEMBLY_TO_MATERIAL = {
+    # Cold-Arid (High Altitude Alpine)
+    "ASM-WALL-CATALOGUE-EPS": "eps",
+    "ASM-WALL-CATALOGUE-AEROGEL": "aerogel",
+    "ASM-WALL-LADAKH-INS-MOD": "MAT-CSEB",
+    "ASM-WALL-LADAKH-IMP-TRAD": "MAT-RAMMED",
+    "ASM-WALL-LADAKH-LIGHT-INS": "MAT-TIMBER-FRAME",
+    "ASM-WALL-LADAKH-SUPER-INS": "MAT-STRAWBALE",
+    "ASM-WALL-LADAKH-MILITARY-SIP": "MAT-SIP-MILITARY",
+    "ASM-ROOF-LADAKH-INS-MOD": "MAT-XPS",
+    "ASM-ROOF-LADAKH-TRAD": "MAT-THATCH",
+    "ASM-ROOF-LADAKH-AEROGEL": "MAT-AEROGEL-TEXTILE",
+    "ASM-FLOOR-LADAKH-INS-SLAB": "MAT-CONCRETE",
+    "ASM-FLOOR-LADAKH-MILITARY-SIP": "MAT-SIP-MILITARY",
+    # Cold-Cloudy (High Altitude Himalayan)
+    "ASM-WALL-SHIMLA-COLD": "MAT-STONE",
+    "ASM-WALL-SHIMLA-TIMBER": "MAT-TIMBER-FRAME",
+    "ASM-ROOF-SHIMLA-PITCHED": "MAT-XPS",
+    "ASM-FLOOR-SHIMLA-RAISED": "MAT-TIMBER-FRAME",
+    # Hot-Dry (Composite Desert / Semi-Arid)
+    "ASM-WALL-JAIPUR-MASS": "MAT-STONE",
+    "ASM-WALL-JAIPUR-AAC": "MAT-CSEB",
+    "ASM-WALL-HOT-PCM-DRYWALL": "MAT-PCM-BOARD",
+    "ASM-WALL-HOT-RAMMED-INS": "MAT-RAMMED-INSULATED",
+    "ASM-WALL-HOT-REV-BRICK": "MAT-REVERSE-BRICK",
+    "ASM-ROOF-JAIPUR-COOL": "MAT-CONCRETE",
+    "ASM-ROOF-HOT-RADIANT-FOIL": "MAT-RADIANT-FOIL",
+    "ASM-FLOOR-JAIPUR-SLAB": "MAT-CONCRETE",
+    # Warm-Humid (Tropical Coastal / Monsoon)
+    "ASM-WALL-WARM-COMP": "MAT-BRICK",
+    "ASM-WALL-WARM-HEMPCRETE": "MAT-HEMPCRETE",
+    "ASM-WALL-WARM-LGSF": "MAT-LGSF-PORTAL",
+    "ASM-ROOF-WARM-VENT": "MAT-CONCRETE",
+    "ASM-ROOF-WARM-PTFE": "MAT-PTFE-MEMBRANE",
+    "ASM-FLOOR-WARM-TILED": "MAT-BRICK",
+}
 
 procurement_engine = ProcurementEngine()
 
 def get_material_id(assembly_id: str):
-    if not ModelA_EnvelopeSelector:
+    if not assembly_id:
         return None
-    for climate_cats in ModelA_EnvelopeSelector.CATALOG.values():
-        for comp_list in climate_cats.values():
-            for spec in comp_list:
-                if spec.assembly_id == assembly_id:
-                    return spec.material_id
+    if assembly_id in ASSEMBLY_TO_MATERIAL:
+        return ASSEMBLY_TO_MATERIAL[assembly_id]
+    if assembly_id.startswith("MAT-"):
+        return assembly_id
+    a_lower = assembly_id.lower()
+    for aid, mid in ASSEMBLY_TO_MATERIAL.items():
+        if aid.lower() == a_lower:
+            return mid
     return None
 
 def get_fallback_requirements(prompt: str):

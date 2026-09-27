@@ -16,7 +16,10 @@ THERMAL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."
 if THERMAL_DIR not in sys.path:
     sys.path.insert(0, THERMAL_DIR)
 
-from thermal_engine import ThermalEngine
+try:
+    from thermal_engine import ThermalEngine
+except ImportError:
+    ThermalEngine = None
 from .weather_adapter import WeatherAdapter, SyntheticWeatherProvider
 from .ventilation_physics import NaturalVentilationEngine
 

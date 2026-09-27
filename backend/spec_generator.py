@@ -85,21 +85,41 @@ PLASTER_DENSITY = 1760       # kg/m³
 # ─────────────────────────────────────────────────────────────
 
 def load_all_materials():
-    """Load all materials from PostgreSQL database."""
+    """Load all materials from PostgreSQL database with automatic fallback to materials.json."""
     database_url = os.environ.get("DATABASE_URL")
-    conn = psycopg2.connect(database_url)
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    cursor.execute("SELECT * FROM materials")
-    rows = cursor.fetchall()
-    conn.close()
+    if database_url:
+        try:
+            conn = psycopg2.connect(database_url)
+            cursor = conn.cursor(cursor_factory=DictCursor)
+            cursor.execute("SELECT * FROM materials")
+            rows = cursor.fetchall()
+            conn.close()
+            
+            materials = {"insulation": [], "structural": [], "glazing": [], "roofing": []}
+            for row in rows:
+                mat = dict(row)
+                category = mat.get("category", "")
+                if category in materials:
+                    materials[category].append(mat)
+            if any(materials.values()):
+                return materials
+        except Exception as e:
+            print(f"[SpecGen] Notice: DB query failed ({e}), falling back to materials.json")
     
-    materials = {"insulation": [], "structural": [], "glazing": [], "roofing": []}
-    for row in rows:
-        mat = dict(row)
-        category = mat.get("category", "")
-        if category in materials:
-            materials[category].append(mat)
-    return materials
+    # Fallback to local materials.json
+    for candidate_path in [
+        os.path.join(os.path.dirname(__file__), "materials.json"),
+        os.path.join(os.path.dirname(__file__), "..", "data", "materials.json"),
+        os.path.join(os.path.dirname(__file__), "data", "materials.json")
+    ]:
+        if os.path.exists(candidate_path):
+            try:
+                with open(candidate_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+                
+    return {"insulation": [], "structural": [], "glazing": [], "roofing": []}
 
 
 

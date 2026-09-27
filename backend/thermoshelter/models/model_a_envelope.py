@@ -8,7 +8,10 @@ embodied carbon, local availability, and cost tiers.
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional
 import os
-import joblib
+try:
+    import joblib
+except ImportError:
+    joblib = None
 import numpy as np
 from ..core.design_state import DesignState, ClimateContext, EnvelopeAssemblies
 
