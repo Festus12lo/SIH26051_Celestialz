@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Lock, ArrowRight, Zap, CheckCircle2, ChevronLeft, Loader2 } from 'lucide-react';
+import { Mail, Lock, ArrowRight, CheckCircle2, ChevronLeft, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Logo from '../components/Logo';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -73,10 +74,7 @@ const LoginPage = () => {
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-8 py-6 backdrop-blur-md bg-black/20 border-b border-white/10 sticky top-0">
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="p-2 bg-white/10 text-white rounded-xl group-hover:bg-white/20 transition-colors">
-            <Zap size={24} />
-          </div>
-          <span className="text-xl font-bold text-white tracking-tight">ThermoShelter</span>
+          <Logo variant="compact" theme="dark" imgClassName="h-9" />
         </Link>
         <Link to="/" className="text-white/60 font-semibold hover:text-white transition-colors flex items-center gap-1 text-sm">
           <ChevronLeft size={16} /> Back to main

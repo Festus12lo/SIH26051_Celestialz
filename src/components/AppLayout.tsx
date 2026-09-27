@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Menu, 
   Bell, 
@@ -13,27 +13,73 @@ import {
   Wind, 
   Box, 
   Package, 
-  Sparkles 
+  Sparkles,
+  X,
 } from 'lucide-react';
 import MinimalSidebar from './MinimalSidebar';
 import SettingsPanel from './SettingsPanel';
+import { useAuth } from '../contexts/AuthContext';
 
 export const AppLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const [rateLimitHit, setRateLimitHit] = useState(false);
+  const { currentUser } = useAuth();
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  // Track read/unread notifications
+  const [notifications, setNotifications] = useState([
+    {
+      id: 'welcome',
+      title: 'Welcome to ThermoShelter!',
+      message: 'Your AI-powered architecture workspace is ready. Start by creating your first shelter design.',
+      time: 'Just now',
+      read: false,
+      action: '/app/preferences',
+    },
+  ]);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {
     const handleRateLimit = () => setRateLimitHit(true);
     window.addEventListener('rate_limit_hit', handleRateLimit);
     
-    // Also check localStorage in case it happened on another page
     const saved = localStorage.getItem('rateLimitHit');
     if (saved === 'true') setRateLimitHit(true);
 
     return () => window.removeEventListener('rate_limit_hit', handleRateLimit);
   }, []);
+
+  // Close notification dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setIsNotifOpen(false);
+      }
+    };
+    if (isNotifOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isNotifOpen]);
+
+  const markAllRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const handleNotifClick = (notif: typeof notifications[0]) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n))
+    );
+    setIsNotifOpen(false);
+    if (notif.action) {
+      navigate(notif.action);
+    }
+  };
 
   const menuItems = [
     { link: '/app', text: 'Home', icon: <LayoutDashboard size={20} /> },
@@ -75,7 +121,7 @@ export const AppLayout: React.FC = () => {
           <div className="flex items-center gap-3 pointer-events-auto">
             {rateLimitHit && location.pathname === '/app' && (
               <div className="flex items-center gap-2 bg-amber-500/20 text-amber-300 px-4 py-2 rounded-xl border border-amber-500/50 backdrop-blur-md animate-in fade-in slide-in-from-top-4 mr-2" title="Primary API Quota Exhausted. Using fallback keys.">
-                <Bell className="w-5 h-5 animate-bounce" />
+                <Zap className="w-5 h-5 animate-bounce" />
                 <span className="text-sm font-medium hidden md:inline">API Quota Low</span>
                 <button 
                   onClick={() => setRateLimitHit(false)}
@@ -85,36 +131,107 @@ export const AppLayout: React.FC = () => {
                 </button>
               </div>
             )}
-            {location.pathname === '/app' && (
-              <button 
-                onClick={() => setIsSettingsOpen(true)}
-                className="p-3 bg-black/40 backdrop-blur-md rounded-xl border border-white/10 text-white hover:bg-white/10 transition-colors cursor-pointer relative group"
-                title="API Credits & System Status — Click to configure keys"
+
+            {/* Notification Bell — Dropdown, not a page redirect */}
+            <div className="relative" ref={notifRef}>
+              <button
+                onClick={() => setIsNotifOpen(!isNotifOpen)}
+                className="p-3 bg-black/40 backdrop-blur-md rounded-xl border border-white/10 text-white hover:bg-white/10 transition-colors cursor-pointer relative"
+                title="Notifications"
               >
                 <Bell size={24} />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full border-2 border-black animate-pulse"></span>
-                <div className="absolute right-0 top-14 w-72 bg-zinc-900 border border-white/10 p-4 rounded-xl shadow-xl hidden group-hover:block transition-all z-50 text-left">
-                  <p className="text-sm text-yellow-400 font-bold mb-2 flex items-center gap-2"><Zap size={16}/> Low Credits Warning</p>
-                  <p className="text-xs text-white/70 leading-relaxed">Your free API credits are running low. Click here to add your Gemini or NVIDIA API keys in Settings to continue without interruption.</p>
-                </div>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF5722] rounded-full border-2 border-black flex items-center justify-center text-[10px] font-bold text-white animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
               </button>
-            )}
+
+              {/* Notification Dropdown */}
+              {isNotifOpen && (
+                <div className="absolute right-0 top-14 w-80 bg-zinc-900/95 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-md overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                    <h3 className="text-sm font-bold text-white">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllRead}
+                        className="text-xs text-[#FF5722] font-semibold hover:text-[#FF7043] transition-colors cursor-pointer"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Notification List */}
+                  <div className="max-h-72 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="py-8 text-center text-white/40 text-sm">
+                        No notifications yet
+                      </div>
+                    ) : (
+                      notifications.map((notif) => (
+                        <button
+                          key={notif.id}
+                          onClick={() => handleNotifClick(notif)}
+                          className={`w-full text-left px-4 py-3 hover:bg-white/5 transition-colors cursor-pointer border-b border-white/5 last:border-none ${
+                            !notif.read ? 'bg-white/[0.03]' : ''
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            {!notif.read && (
+                              <div className="mt-1.5 w-2 h-2 rounded-full bg-[#FF5722] shrink-0" />
+                            )}
+                            <div className={!notif.read ? '' : 'ml-5'}>
+                              <p className="text-sm font-semibold text-white/90 leading-snug">
+                                {notif.title}
+                              </p>
+                              <p className="text-xs text-white/50 mt-0.5 leading-relaxed">
+                                {notif.message}
+                              </p>
+                              <p className="text-[10px] text-white/30 mt-1 font-medium">
+                                {notif.time}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Settings Button */}
             <button 
               onClick={() => setIsSettingsOpen(true)}
               className="p-3 bg-black/40 backdrop-blur-md rounded-xl border border-white/10 text-white hover:bg-white/10 transition-colors cursor-pointer relative"
-              title="API Keys & Integrations"
+              title="API Keys & Settings"
             >
               <Settings size={24} />
               {rateLimitHit && location.pathname === '/app' && (
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full border-2 border-black animate-pulse"></span>
               )}
             </button>
+
+            {/* Profile Avatar — Links to Profile Page */}
             <Link 
-              to="/app/preferences"
-              className="p-3 bg-black/40 backdrop-blur-md rounded-xl border border-white/10 text-white hover:bg-white/10 transition-colors cursor-pointer"
-              title="Build Shelter & Project Settings"
+              to="/app/profile"
+              className="p-1 bg-black/40 backdrop-blur-md rounded-xl border border-white/10 text-white hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-center"
+              title="Your Profile"
             >
-              <User size={24} />
+              {currentUser?.photoURL ? (
+                <img
+                  src={currentUser.photoURL}
+                  alt="Profile"
+                  className="w-10 h-10 rounded-lg object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#FF5722] to-[#FF9800] flex items-center justify-center text-white font-bold text-sm">
+                  {currentUser?.displayName?.charAt(0)?.toUpperCase() || <User size={20} />}
+                </div>
+              )}
             </Link>
           </div>
         </div>

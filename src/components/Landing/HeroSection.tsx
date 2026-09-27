@@ -30,9 +30,13 @@ export default function HeroSection() {
           Architectural Intelligence
         </p>
 
-        <h1 className="hero-heading font-heading text-[clamp(4rem,12vw,14rem)] leading-[0.85] tracking-tight mb-12 md:mb-20">
-          ThermoShelter
-        </h1>
+        <div className="mb-12 md:mb-20">
+          <img 
+            src="/images/thermoshelter_logo_transparent.png" 
+            alt="ThermoShelter" 
+            className="h-24 sm:h-32 md:h-44 lg:h-52 w-auto object-contain mx-auto drop-shadow-2xl"
+          />
+        </div>
 
         <div className="max-w-[280px] sm:max-w-md md:max-w-2xl mx-auto mb-16 md:mb-24">
           <AnimatedText 

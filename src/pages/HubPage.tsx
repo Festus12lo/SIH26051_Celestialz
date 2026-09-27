@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { AppContext } from '../App';
 import WeatherBackground from '../components/WeatherBackground';
 import { architecturalFacts } from '../data/architecturalFacts';
+import Logo from '../components/Logo';
 
 export const HubPage: React.FC = () => {
   const { blueprintData } = useContext(AppContext);
@@ -71,7 +72,7 @@ export const HubPage: React.FC = () => {
       
       <div className="text-center space-y-4 animate-in fade-in duration-1000 z-10 mb-16 px-8">
         <h1 className="text-5xl md:text-7xl font-black tracking-tight hero-heading pb-2 leading-[1.1]">
-          ThermoShelter
+          <Logo variant="full" theme="dark" imgClassName="max-w-[320px] md:max-w-[420px] mx-auto" />
         </h1>
         <p className="text-white/80 text-xl md:text-2xl font-medium max-w-2xl mx-auto leading-relaxed text-balance">
           Design and test climate-smart shelters that stay naturally warm in winter and cool in summer without high energy bills.
