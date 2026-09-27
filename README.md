@@ -1,6 +1,7 @@
 <div align="center">
 
-# 🏔️ ThermoShelter by Celestialz
+<img src="./public/images/thermoshelter_logo_transparent.png" alt="ThermoShelter by Celestialz" width="460"/>
+
 ### *Physics-Grounded Generative AI Architecture for Extreme Climate & Disaster Relief Shelters*
 
 [![React 19](https://img.shields.io/badge/React-19.0-61dafb?style=for-the-badge&logo=react)](https://react.dev/)
