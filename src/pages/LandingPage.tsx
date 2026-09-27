@@ -1,11 +1,23 @@
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import HeroSection from '../components/Landing/HeroSection';
 import MarqueeSection from '../components/Landing/MarqueeSection';
 import AboutSection from '../components/Landing/AboutSection';
 import ServicesSection from '../components/Landing/ServicesSection';
 import ProjectsSection from '../components/Landing/ProjectsSection';
+import { useAuth } from '../contexts/AuthContext';
 
 const LandingPage: React.FC = () => {
+  const { currentUser, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // If user is already signed in, redirect to the app workspace
+  useEffect(() => {
+    if (!loading && currentUser) {
+      navigate('/app', { replace: true });
+    }
+  }, [currentUser, loading, navigate]);
+
   // Smooth scroll behavior for anchor links
   useEffect(() => {
     const handleHashChange = (e: HashChangeEvent) => {
@@ -43,3 +55,4 @@ const LandingPage: React.FC = () => {
 };
 
 export default LandingPage;
+

@@ -21,6 +21,7 @@ import CataloguePage from './pages/CataloguePage';
 import AIAssistPage from './pages/AIAssistPage';
 import PreferencesPage from './pages/PreferencesPage';
 import ShoppingPage from './pages/ShoppingPage';
+import ProfilePage from './pages/ProfilePage';
 
 // Global Shared State Context
 export const AppContext = createContext<any>(null);
@@ -101,6 +102,7 @@ export default function App() {
             <Route path="ai-assist" element={<AIAssistPage />} />
             <Route path="preferences" element={<PreferencesPage />} />
             <Route path="shopping" element={<ShoppingPage />} />
+            <Route path="profile" element={<ProfilePage />} />
           </Route>
 
           {/* Catch-all Fallback */}
