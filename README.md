@@ -4,6 +4,7 @@
 
 ### *Physics-Grounded Generative AI Architecture for Extreme Climate & Disaster Relief Shelters*
 
+[![Live Demo](https://img.shields.io/badge/Demo-Live%20Application-brightgreen?style=for-the-badge&logo=vercel)](https://sih-26051-celestialz.vercel.app/)
 [![React 19](https://img.shields.io/badge/React-19.0-61dafb?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
@@ -12,10 +13,26 @@
 [![SIH Submission](https://img.shields.io/badge/Smart%20India%20Hackathon-Submission%20Ready-emerald?style=for-the-badge)](https://sih.gov.in/)
 
 <p align="center">
+  🌐 <strong>Live Web App:</strong> <a href="https://sih-26051-celestialz.vercel.app/">https://sih-26051-celestialz.vercel.app/</a><br/>
+  ⚡ <strong>Cloud Backend:</strong> <a href="https://sih26051celestialz-production.up.railway.app">Railway Production API</a> &nbsp;|&nbsp; 📖 <a href="https://sih26051celestialz-production.up.railway.app/docs">Interactive Swagger Docs</a>
+</p>
+
+<p align="center">
   <strong>Grounded in thermal physics, bioclimatic principles, and real-time climate telemetry — generating buildable, resilient shelters that keep people safe in Earth's harshest environments.</strong>
 </p>
 
 </div>
+
+---
+
+## 🌐 Live Deployments & Cloud Architecture
+
+| Service | Platform | Live URL | Status |
+| :--- | :--- | :--- | :--- |
+| **Frontend Web App** | Vercel | [https://sih-26051-celestialz.vercel.app/](https://sih-26051-celestialz.vercel.app/) | [![Vercel Status](https://img.shields.io/badge/Status-Operational-success?style=flat-square&logo=vercel)](https://sih-26051-celestialz.vercel.app/) |
+| **Backend REST API** | Railway | [https://sih26051celestialz-production.up.railway.app](https://sih26051celestialz-production.up.railway.app) | [![Railway Status](https://img.shields.io/badge/Status-Active-success?style=flat-square&logo=railway)](https://sih26051celestialz-production.up.railway.app) |
+| **Interactive API Docs** | FastAPI / Swagger | [https://sih26051celestialz-production.up.railway.app/docs](https://sih26051celestialz-production.up.railway.app/docs) | [![Docs Status](https://img.shields.io/badge/Swagger-Live-brightgreen?style=flat-square)](https://sih26051celestialz-production.up.railway.app/docs) |
+| **Database** | Neon PostgreSQL | Cloud Hosted (Multi-region Serverless) | [![Neon Status](https://img.shields.io/badge/PostgreSQL-Connected-blue?style=flat-square&logo=postgresql)](https://neon.tech) |
 
 ---
 
@@ -176,7 +193,7 @@ ThermoShelter/
 
 ### Step 1: Clone Repository
 ```bash
-git clone https://github.com/your-username/thermoshelter.git
+git clone https://github.com/Festus12lo/thermoshelter.git
 cd thermoshelter
 ```
 

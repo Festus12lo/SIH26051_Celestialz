@@ -53,6 +53,7 @@ ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()] if _
 
 # Guarantee production origins are always present regardless of env overrides
 _required_origins = [
+    "https://sih-26051-celestialz.vercel.app",
     "https://thermoshelter.vercel.app",
     "https://sih26051celestialz-production.up.railway.app",
 ]
