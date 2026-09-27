@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="../../public/images/thermoshelter_header_logo.png" alt="ThermoShelter by Celestialz" width="500"/>
+  <img src="../../public/images/thermoshelter_logo.png" alt="ThermoShelter by Celestialz" width="500"/>
   <br/>
   <h1>Smart India Hackathon (SIH 2026) — Executive Submission Dossier</h1>
   <p><strong>Problem Statement ID:</strong> SIH26051 &nbsp;|&nbsp; <strong>Team:</strong> Celestialz</p>

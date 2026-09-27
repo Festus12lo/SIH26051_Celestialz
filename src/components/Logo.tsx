@@ -22,10 +22,7 @@ export default function Logo({
   className = '',
   imgClassName = '',
 }: LogoProps) {
-  const src =
-    theme === 'light'
-      ? '/images/thermoshelter_logo.png'
-      : '/images/thermoshelter_header_logo.png';
+  const src = '/images/thermoshelter_logo.png';
 
   if (variant === 'icon-only') {
     return (

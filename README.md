@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./public/images/thermoshelter_header_logo.png" alt="ThermoShelter by Celestialz" width="500"/>
+<img src="./public/images/thermoshelter_logo.png" alt="ThermoShelter by Celestialz" width="520"/>
 
 ### *Physics-Grounded Generative AI Architecture for Extreme Climate & Disaster Relief Shelters*
 

@@ -32,9 +32,9 @@ export default function HeroSection() {
 
         <div className="mb-12 md:mb-20">
           <img 
-            src="/images/thermoshelter_header_logo.png" 
-            alt="ThermoShelter" 
-            className="h-20 sm:h-28 md:h-36 lg:h-44 w-auto object-contain mx-auto rounded-2xl drop-shadow-2xl"
+            src="/images/thermoshelter_logo.png" 
+            alt="ThermoShelter by Celestialz" 
+            className="h-24 sm:h-32 md:h-44 lg:h-52 w-auto object-contain mx-auto drop-shadow-2xl"
           />
         </div>
 
