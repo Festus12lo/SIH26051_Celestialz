@@ -4,12 +4,21 @@ from prompts import REQUIREMENTS_PARSER_PROMPT, RATIONALE_SYSTEM_PROMPT, CHAT_SY
 from procurement_engine import ProcurementEngine
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-from thermoshelter.models.model_a_envelope import ModelA_EnvelopeSelector
+
+try:
+    from thermoshelter.models.model_a_envelope import ModelA_EnvelopeSelector
+except ImportError:
+    try:
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+        from thermoshelter.models.model_a_envelope import ModelA_EnvelopeSelector
+    except ImportError:
+        ModelA_EnvelopeSelector = None
 
 procurement_engine = ProcurementEngine()
 
 def get_material_id(assembly_id: str):
+    if not ModelA_EnvelopeSelector:
+        return None
     for climate_cats in ModelA_EnvelopeSelector.CATALOG.values():
         for comp_list in climate_cats.values():
             for spec in comp_list:
