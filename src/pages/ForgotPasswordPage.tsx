@@ -51,8 +51,10 @@ export default function ForgotPasswordPage() {
 
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-8 py-6 backdrop-blur-md bg-black/20 border-b border-white/10 sticky top-0">
-        <Link to="/" className="flex items-center gap-2 group">
-          <Logo variant="compact" theme="dark" imgClassName="h-9" />
+        <Link to="/" className="flex items-center group">
+          <div className="bg-white rounded-xl py-1.5 px-3.5 shadow-md border border-white/20 transition-all group-hover:scale-[1.02] flex items-center justify-center">
+            <Logo variant="compact" theme="light" imgClassName="h-7" />
+          </div>
         </Link>
         <Link to="/login" className="text-white/60 font-semibold hover:text-white transition-colors flex items-center gap-1.5 text-sm">
           <ArrowLeft size={16} /> Back to Login
