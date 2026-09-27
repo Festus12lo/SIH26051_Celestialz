@@ -40,7 +40,7 @@ def check_rate_limit(request: Request) -> bool:
     _rate_limits[client_ip].append(now)
     return False
 
-# Read allowed origins from env; support regex for any localhost/127.0.0.1 port in dev
+# Read allowed origins from env; support regex for localhost, Vercel, and Railway
 _raw_origins = os.getenv("ALLOWED_ORIGINS", "")
 ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()] if _raw_origins else [
     "http://localhost:5173",
@@ -49,12 +49,14 @@ ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()] if _
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "https://thermoshelter.vercel.app",
+    "https://sih26051celestialz-production.up.railway.app",
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+    allow_origin_regex=r"^https?://([a-zA-Z0-9-]+\.)*(vercel\.app|railway\.app|localhost|127\.0\.0\.1)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
