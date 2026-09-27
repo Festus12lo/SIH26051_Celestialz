@@ -251,17 +251,34 @@ npm run dev
 
 ---
 
-## 👥 7. Team Celestialz & Acknowledgements
+## 👥 7. Team Celestialz
 
-Developed with passion by **Team Celestialz** for the **Smart India Hackathon (SIH)**.
+<div align="center">
+
+**2nd Year · CSE (AI & ML) · VSB Engineering College**
+
+**Smart India Hackathon (SIH) 2026**
+
+</div>
+
+| Role | Name |
+| :--- | :--- |
+| 👑 **Team Leader** | Festus Nelofer K |
+| 🧑‍💻 Team Member | Aswanth S |
+| 🧑‍💻 Team Member | Kamalesh S |
+| 🧑‍💻 Team Member | Kavin Nivash S K |
+| 🧑‍💻 Team Member | Bharathi M |
+| 🧑‍💻 Team Member | Aiswarya Lakshmi R |
+
+### Acknowledgements
 
 - **Frontend & UX Architecture**: React 19, Tailwind CSS, Three.js, Lucide Icons, Framer Motion
 - **Backend & Physics Modeling**: FastAPI, Pydantic, NumPy, SciPy
 - **Weather Telemetry**: Open-Meteo Global Historical & Forecast API
-- **AI Synthesis**: Google Gemini 2.5 / 1.5 Flash, Groq Llama-3.3, NVIDIA NIM
+- **AI Synthesis**: Google Gemini 3.x Flash, Groq Llama-3.3, NVIDIA NIM
 
 ---
 
 <div align="center">
-  <sub>ThermoShelter by Celestialz • Built for resilience, humanity, and sustainability.</sub>
+  <sub>ThermoShelter by Team Celestialz · VSB Engineering College · Built for resilience, humanity, and sustainability.</sub>
 </div>
